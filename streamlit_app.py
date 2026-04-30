@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="Entreno",
     page_icon="💪",
     layout="centered",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 DATA_FILE = "data_lagartijas.csv"
@@ -26,10 +26,15 @@ TIPO_PESO = "Peso"
 
 # ─────────────────────────────────────────────────────────────
 # ESTILO APPLE / MODERNO
+# Tema automático: claro u oscuro según configuración del celular
 # ─────────────────────────────────────────────────────────────
 
 st.markdown("""
 <style>
+  html {
+    color-scheme: light dark;
+  }
+
   :root {
     --ios-bg: #F2F2F7;
     --ios-card: #FFFFFF;
@@ -41,6 +46,8 @@ st.markdown("""
     --ios-red: #FF3B30;
     --ios-gray: #E5E5EA;
     --ios-border: rgba(60, 60, 67, 0.12);
+    --ios-input: #FAFAFA;
+    --ios-metric-bg: rgba(255,255,255,0.72);
   }
 
   html, body, [class*="css"] {
@@ -49,12 +56,51 @@ st.markdown("""
     -webkit-font-smoothing: antialiased;
   }
 
-  #MainMenu, footer, header {
+  /* Oculta menú y footer, pero NO oculta el header,
+     porque ahí está el botón nativo de sidebar */
+  #MainMenu, footer {
     visibility: hidden;
+  }
+
+  header {
+    visibility: visible !important;
+    background: transparent !important;
+    height: 3rem !important;
   }
 
   .stDeployButton {
     display: none;
+  }
+
+  /* Botón nativo de Streamlit para abrir/cerrar sidebar */
+  [data-testid="collapsedControl"] {
+    visibility: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: fixed !important;
+    top: 14px !important;
+    left: 14px !important;
+    z-index: 999999 !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border: 1px solid rgba(60, 60, 67, 0.12) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.10) !important;
+  }
+
+  [data-testid="collapsedControl"] svg {
+    color: #1C1C1E !important;
+  }
+
+  [data-testid="stSidebar"] {
+    background: rgba(255, 255, 255, 0.92) !important;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-right: 1px solid var(--ios-border);
   }
 
   [data-testid="stAppViewContainer"] {
@@ -66,13 +112,13 @@ st.markdown("""
 
   .block-container {
     max-width: 760px;
-    padding: 1.4rem 1rem 4rem;
+    padding: 1.2rem 1rem 4rem;
     margin: 0 auto;
   }
 
   .app-header {
     text-align: left;
-    padding: 18px 4px 18px;
+    padding: 20px 4px 18px;
   }
 
   .eyebrow {
@@ -252,13 +298,14 @@ st.markdown("""
   div[data-testid="stNumberInput"] input {
     border-radius: 14px !important;
     border: 1px solid var(--ios-border) !important;
-    background: #FAFAFA !important;
+    background: var(--ios-input) !important;
     min-height: 46px !important;
     font-size: 16px !important;
+    color: var(--ios-text) !important;
   }
 
   [data-testid="stMetric"] {
-    background: rgba(255,255,255,0.70);
+    background: var(--ios-metric-bg);
     border: 1px solid var(--ios-border);
     border-radius: 20px;
     padding: 14px 16px;
@@ -296,6 +343,8 @@ st.markdown("""
       --ios-muted: #98989D;
       --ios-gray: #2C2C2E;
       --ios-border: rgba(255, 255, 255, 0.12);
+      --ios-input: #2C2C2E;
+      --ios-metric-bg: rgba(28,28,30,0.70);
     }
 
     [data-testid="stAppViewContainer"] {
@@ -305,22 +354,28 @@ st.markdown("""
         var(--ios-bg);
     }
 
-    .ios-card {
-      background: rgba(28, 28, 30, 0.88);
+    [data-testid="stSidebar"] {
+      background: rgba(28, 28, 30, 0.94) !important;
+      border-right: 1px solid var(--ios-border);
     }
 
-    div[data-testid="stNumberInput"] input {
-      background: #2C2C2E !important;
+    [data-testid="collapsedControl"] {
+      background: rgba(28, 28, 30, 0.88) !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,.35) !important;
+    }
+
+    [data-testid="collapsedControl"] svg {
       color: #F2F2F7 !important;
+    }
+
+    .ios-card {
+      background: rgba(28, 28, 30, 0.88);
     }
 
     button[kind="secondary"] {
       background: #2C2C2E !important;
       color: #F2F2F7 !important;
-    }
-
-    [data-testid="stMetric"] {
-      background: rgba(28,28,30,0.70);
     }
   }
 </style>
@@ -337,7 +392,7 @@ def crear_df_vacio() -> pd.DataFrame:
 
 def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Deja cualquier archivo antiguo en el formato nuevo:
+    Convierte cualquier archivo antiguo al formato nuevo:
     Fecha, Tipo_Ejercicio, Cantidad, Peso, RPE_Esfuerzo
     """
 
@@ -348,7 +403,7 @@ def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
     if all(col in df.columns for col in COLUMNAS):
         out = df[COLUMNAS].copy()
 
-    # Caso antiguo 1: fecha, cantidad
+    # Caso antiguo: fecha, cantidad
     elif "fecha" in df.columns and "cantidad" in df.columns:
         out = pd.DataFrame({
             "Fecha": df["fecha"],
@@ -358,7 +413,7 @@ def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
             "RPE_Esfuerzo": None,
         })
 
-    # Caso antiguo 2: fecha, lagartijas, plancha_segundos
+    # Caso antiguo: fecha, lagartijas, plancha_segundos
     elif "fecha" in df.columns and ("lagartijas" in df.columns or "plancha_segundos" in df.columns):
         registros = []
 
@@ -406,6 +461,11 @@ def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
     return out[COLUMNAS]
 
 
+def guardar_df(df: pd.DataFrame) -> None:
+    df = normalizar_df(df)
+    df.to_csv(DATA_FILE, index=False)
+
+
 def cargar_datos() -> pd.DataFrame:
     if os.path.exists(DATA_FILE):
         df = pd.read_csv(DATA_FILE)
@@ -418,11 +478,6 @@ def cargar_datos() -> pd.DataFrame:
         return df
 
     return crear_df_vacio()
-
-
-def guardar_df(df: pd.DataFrame) -> None:
-    df = normalizar_df(df)
-    df.to_csv(DATA_FILE, index=False)
 
 
 def agregar_registro(tipo: str, cantidad: int, peso=None, rpe=None) -> None:
@@ -484,15 +539,6 @@ def format_seconds(seconds: int) -> str:
 
     hours, minutes = divmod(minutes, 60)
     return f"{hours}h {minutes}m {sec}s"
-
-
-def deuda_texto(hecho: int, meta: int, unidad: str) -> str:
-    deuda = hecho - meta
-
-    if unidad == "seg":
-        return format_seconds(abs(deuda))
-
-    return str(abs(deuda))
 
 
 def preparar_progreso_diario(df: pd.DataFrame, tipo: str, dias: int = 14) -> pd.DataFrame:
@@ -980,7 +1026,7 @@ with tab_analisis:
     )
 
     st.download_button(
-        label="Descargar base completa CSV",
+        label="Descargar base completa CSV para Excel",
         data=descargar_csv(df),
         file_name="data_lagartijas.csv",
         mime="text/csv",
