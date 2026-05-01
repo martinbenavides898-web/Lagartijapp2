@@ -22,11 +22,13 @@ COLUMNAS = ["Fecha", "Tipo_Ejercicio", "Cantidad", "Peso", "RPE_Esfuerzo"]
 TIPO_FLEXIONES = "Flexiones"
 TIPO_PLANCHA = "Plancha"
 TIPO_PESO = "Peso"
+TIPO_DESCANSO = "Día Libre / Sick Day"
+
+TIPOS_RACHA = [TIPO_FLEXIONES, TIPO_PLANCHA, TIPO_DESCANSO]
 
 
 # ─────────────────────────────────────────────────────────────
 # ESTILO APPLE / MODERNO
-# Tema automático: claro u oscuro según configuración del celular
 # ─────────────────────────────────────────────────────────────
 
 st.markdown("""
@@ -56,8 +58,6 @@ st.markdown("""
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Oculta menú y footer, pero NO oculta el header,
-     porque ahí está el botón nativo de sidebar */
   #MainMenu, footer {
     visibility: hidden;
   }
@@ -72,7 +72,6 @@ st.markdown("""
     display: none;
   }
 
-  /* Botón nativo de Streamlit para abrir/cerrar sidebar */
   [data-testid="collapsedControl"] {
     visibility: visible !important;
     display: flex !important;
@@ -111,7 +110,7 @@ st.markdown("""
   }
 
   .block-container {
-    max-width: 760px;
+    max-width: 780px;
     padding: 1.2rem 1rem 4rem;
     margin: 0 auto;
   }
@@ -186,11 +185,11 @@ st.markdown("""
 
   .counter-number {
     display: block;
-    font-size: 76px;
+    font-size: 62px;
     line-height: 0.95;
     font-weight: 850;
     color: var(--ios-text);
-    letter-spacing: -3.5px;
+    letter-spacing: -3px;
   }
 
   .counter-label {
@@ -209,10 +208,22 @@ st.markdown("""
     margin-bottom: 4px;
   }
 
+  .express-card {
+    background:
+      linear-gradient(135deg, rgba(52, 199, 89, 0.18), rgba(255,255,255,0.88));
+    border: 1px solid rgba(52, 199, 89, 0.22);
+  }
+
+  .express-button button {
+    background: var(--ios-green) !important;
+    color: white !important;
+    box-shadow: 0 8px 18px rgba(52, 199, 89, 0.28) !important;
+  }
+
   .debt-box {
-    background: rgba(255, 59, 48, 0.10);
-    border: 1px solid rgba(255, 59, 48, 0.18);
-    color: var(--ios-red);
+    background: rgba(255, 149, 0, 0.12);
+    border: 1px solid rgba(255, 149, 0, 0.22);
+    color: var(--ios-orange);
     border-radius: 20px;
     padding: 16px;
     text-align: center;
@@ -232,16 +243,6 @@ st.markdown("""
     text-transform: uppercase;
     letter-spacing: 0.35px;
     margin-top: 4px;
-  }
-
-  .ok-box {
-    background: rgba(52, 199, 89, 0.12);
-    border: 1px solid rgba(52, 199, 89, 0.20);
-    color: var(--ios-green);
-    border-radius: 20px;
-    padding: 16px;
-    text-align: center;
-    margin-bottom: 12px;
   }
 
   div[data-testid="stButton"] > button {
@@ -276,15 +277,21 @@ st.markdown("""
   }
 
   .save-button button {
-    background: var(--ios-green) !important;
+    background: var(--ios-blue) !important;
     color: white !important;
-    box-shadow: 0 8px 18px rgba(52, 199, 89, 0.24) !important;
+    box-shadow: 0 8px 18px rgba(0, 122, 255, 0.24) !important;
   }
 
   .debt-button button {
     background: var(--ios-orange) !important;
     color: white !important;
     box-shadow: 0 8px 18px rgba(255, 149, 0, 0.24) !important;
+  }
+
+  .sick-button button {
+    background: rgba(255, 149, 0, 0.15) !important;
+    color: var(--ios-orange) !important;
+    border: 1px solid rgba(255, 149, 0, 0.26) !important;
   }
 
   div[data-testid="stNumberInput"] label,
@@ -330,6 +337,76 @@ st.markdown("""
     color: var(--ios-blue) !important;
   }
 
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .calendar-cell {
+    min-height: 54px;
+    border-radius: 16px;
+    padding: 8px 6px;
+    text-align: center;
+    border: 1px solid var(--ios-border);
+    background: rgba(142, 142, 147, 0.10);
+  }
+
+  .calendar-day {
+    font-size: 16px;
+    font-weight: 850;
+    color: var(--ios-text);
+    line-height: 1;
+  }
+
+  .calendar-weekday {
+    font-size: 11px;
+    color: var(--ios-muted);
+    font-weight: 750;
+    margin-top: 5px;
+  }
+
+  .calendar-done {
+    background: rgba(52, 199, 89, 0.18);
+    border-color: rgba(52, 199, 89, 0.35);
+  }
+
+  .calendar-rest {
+    background: rgba(255, 149, 0, 0.18);
+    border-color: rgba(255, 149, 0, 0.35);
+  }
+
+  .calendar-missed {
+    background: rgba(142, 142, 147, 0.09);
+  }
+
+  .calendar-today {
+    outline: 2px solid var(--ios-blue);
+  }
+
+  .legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    color: var(--ios-muted);
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 99px;
+    margin-right: 5px;
+  }
+
+  .dot-green { background: var(--ios-green); }
+  .dot-orange { background: var(--ios-orange); }
+  .dot-gray { background: var(--ios-muted); }
+
   .stSuccess, .stWarning, .stInfo {
     border-radius: 16px !important;
     border: none !important;
@@ -373,6 +450,11 @@ st.markdown("""
       background: rgba(28, 28, 30, 0.88);
     }
 
+    .express-card {
+      background:
+        linear-gradient(135deg, rgba(52, 199, 89, 0.16), rgba(28,28,30,0.88));
+    }
+
     button[kind="secondary"] {
       background: #2C2C2E !important;
       color: #F2F2F7 !important;
@@ -391,19 +473,14 @@ def crear_df_vacio() -> pd.DataFrame:
 
 
 def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Convierte cualquier archivo antiguo al formato nuevo:
-    Fecha, Tipo_Ejercicio, Cantidad, Peso, RPE_Esfuerzo
-    """
-
     if df.empty:
         return crear_df_vacio()
 
-    # Caso nuevo
+    # Formato nuevo
     if all(col in df.columns for col in COLUMNAS):
         out = df[COLUMNAS].copy()
 
-    # Caso antiguo: fecha, cantidad
+    # Formato antiguo: fecha, cantidad
     elif "fecha" in df.columns and "cantidad" in df.columns:
         out = pd.DataFrame({
             "Fecha": df["fecha"],
@@ -413,7 +490,7 @@ def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
             "RPE_Esfuerzo": None,
         })
 
-    # Caso antiguo: fecha, lagartijas, plancha_segundos
+    # Formato antiguo: fecha, lagartijas, plancha_segundos
     elif "fecha" in df.columns and ("lagartijas" in df.columns or "plancha_segundos" in df.columns):
         registros = []
 
@@ -541,6 +618,65 @@ def format_seconds(seconds: int) -> str:
     return f"{hours}h {minutes}m {sec}s"
 
 
+def max_historico_diario(df: pd.DataFrame, tipo: str, excluir_hoy: bool = True) -> int:
+    if df.empty:
+        return 0
+
+    temp = df[df["Tipo_Ejercicio"] == tipo].copy()
+
+    if temp.empty:
+        return 0
+
+    if excluir_hoy:
+        temp = temp[temp["Fecha"].dt.date != date.today()]
+
+    if temp.empty:
+        return 0
+
+    daily = temp.groupby(temp["Fecha"].dt.date)["Cantidad"].sum()
+
+    if daily.empty:
+        return 0
+
+    return int(daily.max())
+
+
+def registrar_ejercicio_con_pr(tipo: str, cantidad: int, peso=None, rpe=None) -> None:
+    """
+    Guarda el ejercicio y evalúa si el total del día supera el récord histórico.
+    """
+
+    if cantidad <= 0:
+        return
+
+    df_antes = cargar_datos()
+    record_anterior = max_historico_diario(df_antes, tipo, excluir_hoy=True)
+    total_antes_hoy = total_hoy(df_antes, tipo)
+
+    agregar_registro(
+        tipo=tipo,
+        cantidad=int(cantidad),
+        peso=peso,
+        rpe=rpe
+    )
+
+    total_despues_hoy = total_antes_hoy + int(cantidad)
+
+    if total_despues_hoy > record_anterior:
+        if "pr_messages" not in st.session_state:
+            st.session_state.pr_messages = []
+
+        if tipo == TIPO_PLANCHA:
+            valor = format_seconds(total_despues_hoy)
+        else:
+            valor = str(total_despues_hoy)
+
+        st.session_state.pr_messages.append(
+            f"¡NUEVO RÉCORD PERSONAL! 🔥 {tipo}: {valor}"
+        )
+        st.session_state.show_balloons = True
+
+
 def preparar_progreso_diario(df: pd.DataFrame, tipo: str, dias: int = 14) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame()
@@ -578,26 +714,117 @@ def preparar_peso_semanal(df: pd.DataFrame) -> pd.DataFrame:
 
     temp["Dia"] = temp["Fecha"].dt.strftime("%d/%m")
 
-    # Si hay más de un peso en el día, se queda con el último
     temp = temp.sort_values("Fecha")
     resumen = temp.groupby("Dia", as_index=False)["Peso"].last()
 
     return resumen.set_index("Dia")
 
 
+def fechas_activas(df: pd.DataFrame) -> set:
+    if df.empty:
+        return set()
+
+    temp = df[df["Tipo_Ejercicio"].isin(TIPOS_RACHA)].copy()
+
+    if temp.empty:
+        return set()
+
+    # Flexiones/plancha cuentan si cantidad > 0.
+    # Sick Day cuenta aunque cantidad sea 0.
+    temp = temp[
+        ((temp["Tipo_Ejercicio"].isin([TIPO_FLEXIONES, TIPO_PLANCHA])) & (temp["Cantidad"] > 0)) |
+        (temp["Tipo_Ejercicio"] == TIPO_DESCANSO)
+    ]
+
+    return set(temp["Fecha"].dt.date)
+
+
+def fechas_descanso(df: pd.DataFrame) -> set:
+    if df.empty:
+        return set()
+
+    temp = df[df["Tipo_Ejercicio"] == TIPO_DESCANSO].copy()
+
+    if temp.empty:
+        return set()
+
+    return set(temp["Fecha"].dt.date)
+
+
+def calcular_racha(df: pd.DataFrame) -> int:
+    activas = fechas_activas(df)
+
+    if not activas:
+        return 0
+
+    racha = 0
+    cursor = date.today()
+
+    while cursor in activas:
+        racha += 1
+        cursor -= timedelta(days=1)
+
+    return racha
+
+
+def generar_calendario_html(df: pd.DataFrame, dias: int = 28) -> str:
+    activas = fechas_activas(df)
+    descansos = fechas_descanso(df)
+
+    inicio = date.today() - timedelta(days=dias - 1)
+    hoy = date.today()
+
+    dias_semana = ["L", "M", "M", "J", "V", "S", "D"]
+
+    html = """
+    <div class="legend">
+      <span><span class="dot dot-green"></span>Completado</span>
+      <span><span class="dot dot-orange"></span>Día libre</span>
+      <span><span class="dot dot-gray"></span>Sin registro</span>
+    </div>
+    <div class="calendar-grid">
+    """
+
+    for i in range(dias):
+        d = inicio + timedelta(days=i)
+
+        clases = ["calendar-cell"]
+
+        if d in descansos:
+            clases.append("calendar-rest")
+        elif d in activas:
+            clases.append("calendar-done")
+        else:
+            clases.append("calendar-missed")
+
+        if d == hoy:
+            clases.append("calendar-today")
+
+        clase_final = " ".join(clases)
+
+        html += f"""
+        <div class="{clase_final}">
+          <div class="calendar-day">{d.day}</div>
+          <div class="calendar-weekday">{dias_semana[d.weekday()]}</div>
+        </div>
+        """
+
+    html += "</div>"
+
+    return html
+
+
 def descargar_csv(df: pd.DataFrame) -> bytes:
     return df.to_csv(index=False).encode("utf-8-sig")
+
+
+def sync_deuda(source_key: str, target_key: str) -> None:
+    st.session_state[target_key] = int(st.session_state.get(source_key, 0) or 0)
 
 
 # ─────────────────────────────────────────────────────────────
 # SESSION STATE
 # ─────────────────────────────────────────────────────────────
-
-if "flexiones_actuales" not in st.session_state:
-    st.session_state.flexiones_actuales = 0
-
-if "plancha_actual" not in st.session_state:
-    st.session_state.plancha_actual = 0
 
 if "guardado_ok" not in st.session_state:
     st.session_state.guardado_ok = False
@@ -605,32 +832,37 @@ if "guardado_ok" not in st.session_state:
 if "deuda_saldada_ok" not in st.session_state:
     st.session_state.deuda_saldada_ok = False
 
+if "express_ok" not in st.session_state:
+    st.session_state.express_ok = False
+
+if "sick_ok" not in st.session_state:
+    st.session_state.sick_ok = False
+
+if "show_balloons" not in st.session_state:
+    st.session_state.show_balloons = False
+
+if "pr_messages" not in st.session_state:
+    st.session_state.pr_messages = []
+
+if "deuda_pendiente_flexiones" not in st.session_state:
+    st.session_state.deuda_pendiente_flexiones = 0
+
+if "deuda_pendiente_plancha" not in st.session_state:
+    st.session_state.deuda_pendiente_plancha = 0
+
+if "deuda_input_version" not in st.session_state:
+    st.session_state.deuda_input_version = 0
+
+if "manual_input_version" not in st.session_state:
+    st.session_state.manual_input_version = 0
+
 
 # ─────────────────────────────────────────────────────────────
-# SIDEBAR: CONFIGURACIÓN + PESO
+# SIDEBAR: PESO + RPE
 # ─────────────────────────────────────────────────────────────
 
 df = cargar_datos()
 
-st.sidebar.markdown("## Configuración diaria")
-
-meta_flexiones = st.sidebar.number_input(
-    "Meta diaria de flexiones",
-    min_value=0,
-    max_value=2000,
-    value=50,
-    step=5
-)
-
-meta_plancha = st.sidebar.number_input(
-    "Meta diaria de plancha (segundos)",
-    min_value=0,
-    max_value=20000,
-    value=120,
-    step=10
-)
-
-st.sidebar.markdown("---")
 st.sidebar.markdown("## Peso diario")
 
 peso_input = st.sidebar.number_input(
@@ -650,7 +882,7 @@ if st.sidebar.button("Guardar peso", use_container_width=True):
             peso=float(peso_input),
             rpe=None
         )
-        st.sidebar.success("Peso guardado.")
+        st.session_state.guardado_ok = True
         st.rerun()
     else:
         st.sidebar.warning("Ingresa un peso válido.")
@@ -673,16 +905,13 @@ rpe_actual = st.sidebar.slider(
 
 df = cargar_datos()
 
-flexiones_guardadas_hoy = total_hoy(df, TIPO_FLEXIONES)
-plancha_guardada_hoy = total_hoy(df, TIPO_PLANCHA)
-
-flexiones_hechas_hoy = flexiones_guardadas_hoy + st.session_state.flexiones_actuales
-plancha_hecha_hoy = plancha_guardada_hoy + st.session_state.plancha_actual
-
-deuda_flexiones = flexiones_hechas_hoy - meta_flexiones
-deuda_plancha = plancha_hecha_hoy - meta_plancha
-
+flexiones_hoy = total_hoy(df, TIPO_FLEXIONES)
+plancha_hoy = total_hoy(df, TIPO_PLANCHA)
 peso_ultimo = peso_actual(df)
+racha_actual = calcular_racha(df)
+
+record_flexiones = max_historico_diario(df, TIPO_FLEXIONES, excluir_hoy=False)
+record_plancha = max_historico_diario(df, TIPO_PLANCHA, excluir_hoy=False)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -693,31 +922,59 @@ st.markdown("""
 <div class="app-header">
   <div class="eyebrow">Fitness log estructurado</div>
   <h1>Entreno diario</h1>
-  <p>Control de flexiones, plancha, deuda diaria, peso y progreso.</p>
+  <p>Control acumulado de flexiones, plancha, deuda, racha, peso y progreso.</p>
 </div>
 """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────
+# CONFETI + MENSAJES TEMPORALES
+# ─────────────────────────────────────────────────────────────
+
+if st.session_state.show_balloons:
+    st.balloons()
+    st.session_state.show_balloons = False
+
+if st.session_state.pr_messages:
+    for msg in st.session_state.pr_messages:
+        st.success(msg)
+    st.session_state.pr_messages = []
+
+if st.session_state.express_ok:
+    st.success("¡+5 y +20 registrados!")
+    st.session_state.express_ok = False
+
+if st.session_state.deuda_saldada_ok:
+    st.success("Deuda saldada y registrada correctamente.")
+    st.session_state.deuda_saldada_ok = False
+
+if st.session_state.sick_ok:
+    st.success("Día libre registrado. La racha sigue viva.")
+    st.session_state.sick_ok = False
+
+if st.session_state.guardado_ok:
+    st.success("Registro guardado correctamente.")
+    st.session_state.guardado_ok = False
 
 
 # ─────────────────────────────────────────────────────────────
 # MÉTRICAS PRINCIPALES
 # ─────────────────────────────────────────────────────────────
 
-col_m1, col_m2, col_m3 = st.columns(3)
+col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 
 with col_m1:
     st.metric(
-        "Hecho hoy",
-        f"{flexiones_hechas_hoy} flex / {format_seconds(plancha_hecha_hoy)}"
+        "Total de hoy",
+        f"{flexiones_hoy} flex",
+        delta=format_seconds(plancha_hoy)
     )
 
 with col_m2:
-    deuda_flex_txt = f"{deuda_flexiones}" if deuda_flexiones < 0 else f"+{deuda_flexiones}"
-    deuda_plancha_txt = f"{deuda_plancha}s" if deuda_plancha < 0 else f"+{deuda_plancha}s"
-
     st.metric(
-        "Pendiente / Deuda",
-        f"{deuda_flex_txt} flex",
-        delta=deuda_plancha_txt
+        "Deuda pendiente",
+        f"{st.session_state.deuda_pendiente_flexiones} flex",
+        delta=format_seconds(st.session_state.deuda_pendiente_plancha)
     )
 
 with col_m3:
@@ -725,6 +982,9 @@ with col_m3:
         st.metric("Peso actual", "Sin dato")
     else:
         st.metric("Peso actual", f"{peso_ultimo:.1f} kg")
+
+with col_m4:
+    st.metric("Racha activa", f"{racha_actual} días")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -746,43 +1006,82 @@ tab_entreno, tab_deuda, tab_peso, tab_analisis = st.tabs(
 # ─────────────────────────────────────────────────────────────
 
 with tab_entreno:
+    st.markdown('<div class="ios-card express-card">', unsafe_allow_html=True)
+    st.markdown('<p class="card-title">Botón Express</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="card-subtitle">Para microbloques rápidos durante el día.</p>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown('<div class="express-button">', unsafe_allow_html=True)
+
+    if st.button("Fui al baño 🚽  +5 flexiones / +20s plancha", use_container_width=True):
+        registrar_ejercicio_con_pr(
+            tipo=TIPO_FLEXIONES,
+            cantidad=5,
+            peso=peso_ultimo,
+            rpe=rpe_actual
+        )
+
+        registrar_ejercicio_con_pr(
+            tipo=TIPO_PLANCHA,
+            cantidad=20,
+            peso=peso_ultimo,
+            rpe=rpe_actual
+        )
+
+        st.session_state.express_ok = True
+        st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
     st.markdown('<div class="ios-card">', unsafe_allow_html=True)
     st.markdown('<p class="card-title">Flexiones</p>', unsafe_allow_html=True)
 
     st.markdown(f"""
     <div class="counter-wrap">
-      <span class="counter-number">{st.session_state.flexiones_actuales}</span>
-      <span class="counter-label">flexiones en sesión actual</span>
+      <span class="counter-number">{flexiones_hoy}</span>
+      <span class="counter-label">flexiones acumuladas hoy</span>
     </div>
     """, unsafe_allow_html=True)
 
-    col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([3, 2])
 
     with col1:
-        if st.button("＋ Sumar 5 flexiones", type="primary", use_container_width=True):
-            st.session_state.flexiones_actuales += 5
-            st.session_state.guardado_ok = False
+        if st.button("＋ Sumar 5 flexiones", type="primary", use_container_width=True, key="add_flex_5"):
+            registrar_ejercicio_con_pr(
+                tipo=TIPO_FLEXIONES,
+                cantidad=5,
+                peso=peso_ultimo,
+                rpe=rpe_actual
+            )
+            st.session_state.guardado_ok = True
             st.rerun()
+
+    manual_flex_key = f"manual_flexiones_{st.session_state.manual_input_version}"
 
     with col2:
-        if st.button("↺", use_container_width=True, key="reset_flex"):
-            st.session_state.flexiones_actuales = 0
-            st.session_state.guardado_ok = False
-            st.rerun()
+        manual_flexiones = st.number_input(
+            "Manual",
+            min_value=0,
+            max_value=2000,
+            value=0,
+            step=5,
+            key=manual_flex_key,
+            label_visibility="collapsed"
+        )
 
-    manual_flexiones = st.number_input(
-        "Agregar flexiones manualmente",
-        min_value=0,
-        max_value=2000,
-        value=0,
-        step=5,
-        key="manual_flexiones"
-    )
-
-    if st.button("Sumar flexiones escritas", use_container_width=True):
+    if st.button("Guardar flexiones escritas", use_container_width=True, key="save_manual_flex"):
         if manual_flexiones > 0:
-            st.session_state.flexiones_actuales += int(manual_flexiones)
-            st.session_state.guardado_ok = False
+            registrar_ejercicio_con_pr(
+                tipo=TIPO_FLEXIONES,
+                cantidad=int(manual_flexiones),
+                peso=peso_ultimo,
+                rpe=rpe_actual
+            )
+            st.session_state.manual_input_version += 1
+            st.session_state.guardado_ok = True
             st.rerun()
         else:
             st.warning("Escribe una cantidad mayor que 0.")
@@ -794,75 +1093,52 @@ with tab_entreno:
 
     st.markdown(f"""
     <div class="counter-wrap">
-      <span class="counter-number">{format_seconds(st.session_state.plancha_actual)}</span>
-      <span class="counter-label">tiempo de plancha en sesión actual</span>
+      <span class="counter-number">{format_seconds(plancha_hoy)}</span>
+      <span class="counter-label">tiempo acumulado hoy</span>
     </div>
     """, unsafe_allow_html=True)
 
-    col3, col4 = st.columns([3, 1])
+    col3, col4 = st.columns([3, 2])
 
     with col3:
-        if st.button("＋ Sumar 10 segundos", type="primary", use_container_width=True):
-            st.session_state.plancha_actual += 10
-            st.session_state.guardado_ok = False
+        if st.button("＋ Sumar 10 segundos", type="primary", use_container_width=True, key="add_plancha_10"):
+            registrar_ejercicio_con_pr(
+                tipo=TIPO_PLANCHA,
+                cantidad=10,
+                peso=peso_ultimo,
+                rpe=rpe_actual
+            )
+            st.session_state.guardado_ok = True
             st.rerun()
+
+    manual_plancha_key = f"manual_plancha_{st.session_state.manual_input_version}"
 
     with col4:
-        if st.button("↺", use_container_width=True, key="reset_plancha"):
-            st.session_state.plancha_actual = 0
-            st.session_state.guardado_ok = False
-            st.rerun()
+        manual_plancha = st.number_input(
+            "Manual",
+            min_value=0,
+            max_value=20000,
+            value=0,
+            step=10,
+            key=manual_plancha_key,
+            label_visibility="collapsed"
+        )
 
-    manual_plancha = st.number_input(
-        "Agregar segundos de plancha manualmente",
-        min_value=0,
-        max_value=20000,
-        value=0,
-        step=10,
-        key="manual_plancha"
-    )
-
-    if st.button("Sumar segundos escritos", use_container_width=True):
+    if st.button("Guardar segundos escritos", use_container_width=True, key="save_manual_plancha"):
         if manual_plancha > 0:
-            st.session_state.plancha_actual += int(manual_plancha)
-            st.session_state.guardado_ok = False
+            registrar_ejercicio_con_pr(
+                tipo=TIPO_PLANCHA,
+                cantidad=int(manual_plancha),
+                peso=peso_ultimo,
+                rpe=rpe_actual
+            )
+            st.session_state.manual_input_version += 1
+            st.session_state.guardado_ok = True
             st.rerun()
         else:
             st.warning("Escribe una cantidad mayor que 0.")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="save-button">', unsafe_allow_html=True)
-
-    if st.button("Guardar sesión del día", use_container_width=True):
-        if st.session_state.flexiones_actuales > 0:
-            agregar_registro(
-                tipo=TIPO_FLEXIONES,
-                cantidad=st.session_state.flexiones_actuales,
-                peso=peso_ultimo,
-                rpe=rpe_actual
-            )
-
-        if st.session_state.plancha_actual > 0:
-            agregar_registro(
-                tipo=TIPO_PLANCHA,
-                cantidad=st.session_state.plancha_actual,
-                peso=peso_ultimo,
-                rpe=rpe_actual
-            )
-
-        if st.session_state.flexiones_actuales > 0 or st.session_state.plancha_actual > 0:
-            st.session_state.flexiones_actuales = 0
-            st.session_state.plancha_actual = 0
-            st.session_state.guardado_ok = True
-            st.rerun()
-        else:
-            st.warning("No hay nada que guardar todavía.")
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    if st.session_state.guardado_ok:
-        st.success("Sesión guardada correctamente.")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -873,53 +1149,51 @@ with tab_deuda:
     st.markdown('<div class="ios-card">', unsafe_allow_html=True)
     st.markdown('<p class="card-title">Modo Oficina/Calle</p>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="card-subtitle">Úsalo cuando estés fuera y quieras dejar registrada una deuda o saldar ejercicios hechos en bloques chicos.</p>',
+        '<p class="card-subtitle">Anota lo que debes hacer después. Al saldar deuda, se guarda como registro normal en el CSV.</p>',
         unsafe_allow_html=True
     )
 
-    deuda_flex_real = meta_flexiones - flexiones_hechas_hoy
-    deuda_plancha_real = meta_plancha - plancha_hecha_hoy
+    st.markdown(f"""
+    <div class="debt-box">
+      <div class="debt-number">
+        {st.session_state.deuda_pendiente_flexiones} flex / {format_seconds(st.session_state.deuda_pendiente_plancha)}
+      </div>
+      <div class="debt-label">Deuda pendiente actual</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    if deuda_flex_real <= 0 and deuda_plancha_real <= 0:
-        st.markdown("""
-        <div class="ok-box">
-          <div class="debt-number">Meta saldada</div>
-          <div class="debt-label">No tienes deuda pendiente</div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-        <div class="debt-box">
-          <div class="debt-number">-{max(deuda_flex_real, 0)} flex / -{format_seconds(max(deuda_plancha_real, 0))}</div>
-          <div class="debt-label">Deuda contra la meta diaria</div>
-        </div>
-        """, unsafe_allow_html=True)
+    deuda_version = st.session_state.deuda_input_version
+
+    deuda_flex_key = f"deuda_flexiones_input_{deuda_version}"
+    deuda_plancha_key = f"deuda_plancha_input_{deuda_version}"
 
     flexiones_pendientes = st.number_input(
         "Flexiones pendientes",
         min_value=0,
         max_value=2000,
-        value=max(deuda_flex_real, 0),
-        step=5
+        value=0,
+        step=5,
+        key=deuda_flex_key,
+        on_change=sync_deuda,
+        args=(deuda_flex_key, "deuda_pendiente_flexiones")
     )
 
     plancha_pendiente = st.number_input(
         "Segundos de Plancha pendientes",
         min_value=0,
         max_value=20000,
-        value=max(deuda_plancha_real, 0),
-        step=10
-    )
-
-    st.info(
-        "Cuando presiones “Saldar Deuda”, esos valores se agregarán al registro final del día como ejercicio completado."
+        value=0,
+        step=10,
+        key=deuda_plancha_key,
+        on_change=sync_deuda,
+        args=(deuda_plancha_key, "deuda_pendiente_plancha")
     )
 
     st.markdown('<div class="debt-button">', unsafe_allow_html=True)
 
-    if st.button("Saldar Deuda", use_container_width=True):
+    if st.button("Saldar Deuda", use_container_width=True, key="saldar_deuda"):
         if flexiones_pendientes > 0:
-            agregar_registro(
+            registrar_ejercicio_con_pr(
                 tipo=TIPO_FLEXIONES,
                 cantidad=int(flexiones_pendientes),
                 peso=peso_ultimo,
@@ -927,7 +1201,7 @@ with tab_deuda:
             )
 
         if plancha_pendiente > 0:
-            agregar_registro(
+            registrar_ejercicio_con_pr(
                 tipo=TIPO_PLANCHA,
                 cantidad=int(plancha_pendiente),
                 peso=peso_ultimo,
@@ -935,16 +1209,15 @@ with tab_deuda:
             )
 
         if flexiones_pendientes > 0 or plancha_pendiente > 0:
+            st.session_state.deuda_pendiente_flexiones = 0
+            st.session_state.deuda_pendiente_plancha = 0
+            st.session_state.deuda_input_version += 1
             st.session_state.deuda_saldada_ok = True
             st.rerun()
         else:
             st.warning("No ingresaste deuda para saldar.")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-    if st.session_state.deuda_saldada_ok:
-        st.success("Deuda saldada y agregada al registro del día.")
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -982,6 +1255,36 @@ with tab_peso:
 # ─────────────────────────────────────────────────────────────
 
 with tab_analisis:
+    st.markdown('<div class="ios-card">', unsafe_allow_html=True)
+    st.markdown('<p class="card-title">Récords personales</p>', unsafe_allow_html=True)
+
+    col_pr1, col_pr2, col_pr3 = st.columns(3)
+
+    with col_pr1:
+        st.metric("PR Flexiones", f"{record_flexiones} reps")
+
+    with col_pr2:
+        st.metric("PR Plancha", format_seconds(record_plancha))
+
+    with col_pr3:
+        st.metric("Racha actual", f"{racha_actual} días")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="ios-card">', unsafe_allow_html=True)
+    st.markdown('<p class="card-title">Calendario de cumplimiento</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="card-subtitle">Últimos 28 días. Verde = entreno registrado. Naranjo = día libre justificado.</p>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        generar_calendario_html(df, dias=28),
+        unsafe_allow_html=True
+    )
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
     st.markdown('<div class="ios-card">', unsafe_allow_html=True)
     st.markdown('<p class="card-title">Progreso diario: Flexiones</p>', unsafe_allow_html=True)
 
@@ -1034,3 +1337,31 @@ with tab_analisis:
     )
 
     st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────
+# DÍA LIBRE / SICK DAY
+# ─────────────────────────────────────────────────────────────
+
+st.markdown('<div class="ios-card">', unsafe_allow_html=True)
+st.markdown('<p class="card-title">Día Libre / Sick Day</p>', unsafe_allow_html=True)
+st.markdown(
+    '<p class="card-subtitle">Úsalo solo cuando realmente quieras mantener la racha sin sumar repeticiones.</p>',
+    unsafe_allow_html=True
+)
+
+st.markdown('<div class="sick-button">', unsafe_allow_html=True)
+
+if st.button("Día Libre / Sick Day 🤒", use_container_width=True):
+    agregar_registro(
+        tipo=TIPO_DESCANSO,
+        cantidad=0,
+        peso=peso_ultimo,
+        rpe=None
+    )
+
+    st.session_state.sick_ok = True
+    st.rerun()
+
+st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
