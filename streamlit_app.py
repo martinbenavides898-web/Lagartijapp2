@@ -1,14 +1,13 @@
 """
-LagartijApp v3.2 — Apple Fitness Dark
+LagartijApp v3.3 — Apple Fitness Dark
 =====================================
 * Zona horaria forzada a America/Santiago
 * Fondo negro absoluto
+* Anillos de actividad con flecha estilo Apple Fitness
+* Botón superior grande "Fui al baño"
+* Métrica Peso en lila Apple Fitness
+* Métrica Racha en rosa Apple Fitness
 * Sin emojis en textos visibles
-* Entrenamiento con menor fricción: 1 botón principal por ejercicio
-* Inputs manuales discretos
-* Anillos SVG más gruesos, sin texto interno
-* Datos del anillo en columna lateral
-* Calendario con opacidad baja para días pasados
 """
 
 import os
@@ -58,10 +57,6 @@ META_PLANCHA = 120
 # ─────────────────────────────────────────────────────────────
 
 def ahora_chile() -> datetime:
-    """
-    Devuelve datetime local de Chile.
-    Si ZoneInfo falla, usa fallback UTC-4.
-    """
     if CHILE_TZ is not None:
         return datetime.now(CHILE_TZ).replace(tzinfo=None)
 
@@ -87,14 +82,15 @@ st.markdown("""
   --border: rgba(255,255,255,0.10);
 
   --pink: #FF2D55;
-  --pink-dark: #3c0d17;
+  --pink-track: #5C1828;
 
   --lime: #A1FF00;
-  --lime-dark: #1d3600;
+  --lime-track: #3E650A;
 
   --orange: #FF9500;
   --blue: #0A84FF;
   --cyan: #00FFFF;
+  --purple: #BF5AF2;
   --gray: #3A3A3C;
 }
 
@@ -163,7 +159,7 @@ html, body, [class*="css"] {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 0 4px 20px;
+  padding: 0 4px 8px;
 }
 
 .ios-topbar-title {
@@ -178,6 +174,19 @@ html, body, [class*="css"] {
   font-size: 13px;
   font-weight: 500;
   color: var(--muted);
+}
+
+/* Top bath button */
+.btn-top-bath div[data-testid="stButton"] > button {
+  min-height: 58px !important;
+  border-radius: 18px !important;
+  background: var(--blue) !important;
+  color: #FFFFFF !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.3px !important;
+  border-color: rgba(10,132,255,0.60) !important;
+  box-shadow: 0 0 28px rgba(10,132,255,0.25) !important;
 }
 
 /* Cards */
@@ -228,6 +237,7 @@ html, body, [class*="css"] {
   border-radius: 20px;
   padding: 22px;
   margin-bottom: 16px;
+  overflow: hidden;
 }
 
 .ring-visual-wrap {
@@ -235,6 +245,8 @@ html, body, [class*="css"] {
   border: none;
   outline: none;
   box-shadow: none;
+  border-radius: 20px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -243,11 +255,13 @@ html, body, [class*="css"] {
 iframe {
   border: 0 !important;
   background: #1C1C1E !important;
+  border-radius: 20px !important;
 }
 
 [data-testid="stIFrame"] {
   border: 0 !important;
   background: #1C1C1E !important;
+  border-radius: 20px !important;
 }
 
 .ring-data-stack {
@@ -340,6 +354,7 @@ iframe {
 .c-lime { color: var(--lime); }
 .c-orange { color: var(--orange); }
 .c-blue { color: var(--blue); }
+.c-purple { color: var(--purple); }
 
 /* Exercise module */
 .exercise-card {
@@ -527,17 +542,6 @@ div[data-testid="stButton"] > button:hover {
 div[data-testid="stButton"] > button:active {
   transform: scale(0.96);
   opacity: .78;
-}
-
-.btn-express div[data-testid="stButton"] > button {
-  min-height: 82px !important;
-  border-radius: 22px !important;
-  background: var(--lime) !important;
-  color: #000000 !important;
-  font-size: 18px !important;
-  font-weight: 800 !important;
-  border-color: rgba(161,255,0,0.50) !important;
-  box-shadow: 0 0 36px rgba(161,255,0,0.22) !important;
 }
 
 .btn-pink div[data-testid="stButton"] > button {
@@ -929,17 +933,77 @@ def pct(valor: int, meta: int) -> float:
 # HTML PURO
 # ─────────────────────────────────────────────────────────────
 
-def rings_html(flexiones: int, plancha: int) -> str:
-    pi = 3.14159265358979
+def arrow_polygon(cx: float, cy: float, r: float, progress: float, size: float) -> str:
+    """
+    Genera una pequeña flecha tangencial al final del progreso del anillo.
+    """
+    import math
 
-    outer_r = 104
-    inner_r = 69
+    if progress <= 0.02:
+        return ""
+
+    progress = min(progress, 0.995)
+
+    angle_deg = -90 + 360 * progress
+    angle = math.radians(angle_deg)
+
+    x = cx + r * math.cos(angle)
+    y = cy + r * math.sin(angle)
+
+    tangent = angle + math.pi / 2
+
+    tx = math.cos(tangent)
+    ty = math.sin(tangent)
+
+    nx = math.cos(angle)
+    ny = math.sin(angle)
+
+    tip_x = x + tx * size * 0.55
+    tip_y = y + ty * size * 0.55
+
+    base_x = x - tx * size * 0.55
+    base_y = y - ty * size * 0.55
+
+    p1_x = tip_x
+    p1_y = tip_y
+
+    p2_x = base_x + nx * size * 0.38
+    p2_y = base_y + ny * size * 0.38
+
+    p3_x = base_x - nx * size * 0.38
+    p3_y = base_y - ny * size * 0.38
+
+    return f"{p1_x:.2f},{p1_y:.2f} {p2_x:.2f},{p2_y:.2f} {p3_x:.2f},{p3_y:.2f}"
+
+
+def rings_html(flexiones: int, plancha: int) -> str:
+    import math
+
+    pi = math.pi
+
+    outer_r = 100
+    inner_r = 62
 
     outer_c = 2 * pi * outer_r
     inner_c = 2 * pi * inner_r
 
-    outer_dash = outer_c * pct(flexiones, META_FLEXIONES)
-    inner_dash = inner_c * pct(plancha, META_PLANCHA)
+    flex_progress = pct(flexiones, META_FLEXIONES)
+    plan_progress = pct(plancha, META_PLANCHA)
+
+    outer_dash = outer_c * flex_progress
+    inner_dash = inner_c * plan_progress
+
+    outer_arrow = arrow_polygon(130, 130, outer_r, flex_progress, 26)
+    inner_arrow = arrow_polygon(130, 130, inner_r, plan_progress, 22)
+
+    outer_arrow_svg = ""
+    inner_arrow_svg = ""
+
+    if outer_arrow:
+        outer_arrow_svg = f'<polygon points="{outer_arrow}" fill="#FF2D55" />'
+
+    if inner_arrow:
+        inner_arrow_svg = f'<polygon points="{inner_arrow}" fill="#A1FF00" />'
 
     return f"""<!DOCTYPE html>
 <html>
@@ -971,13 +1035,14 @@ def rings_html(flexiones: int, plancha: int) -> str:
 </head>
 <body>
 <svg viewBox="0 0 260 260" width="260" height="260" xmlns="http://www.w3.org/2000/svg">
+
   <circle
     cx="130"
     cy="130"
     r="{outer_r}"
     fill="none"
-    stroke="#3c0d17"
-    stroke-width="28"
+    stroke="#5C1828"
+    stroke-width="32"
   />
 
   <circle
@@ -986,19 +1051,21 @@ def rings_html(flexiones: int, plancha: int) -> str:
     r="{outer_r}"
     fill="none"
     stroke="#FF2D55"
-    stroke-width="28"
+    stroke-width="32"
     stroke-linecap="round"
     stroke-dasharray="{outer_dash:.2f} {outer_c:.2f}"
     transform="rotate(-90 130 130)"
   />
+
+  {outer_arrow_svg}
 
   <circle
     cx="130"
     cy="130"
     r="{inner_r}"
     fill="none"
-    stroke="#1d3600"
-    stroke-width="28"
+    stroke="#3E650A"
+    stroke-width="32"
   />
 
   <circle
@@ -1007,11 +1074,14 @@ def rings_html(flexiones: int, plancha: int) -> str:
     r="{inner_r}"
     fill="none"
     stroke="#A1FF00"
-    stroke-width="28"
+    stroke-width="32"
     stroke-linecap="round"
     stroke-dasharray="{inner_dash:.2f} {inner_c:.2f}"
     transform="rotate(-90 130 130)"
   />
+
+  {inner_arrow_svg}
+
 </svg>
 </body>
 </html>"""
@@ -1174,17 +1244,31 @@ peso_txt = "Sin dato" if peso_ult is None else f"{peso_ult:.1f} kg"
 
 
 # ─────────────────────────────────────────────────────────────
-# TOP BAR
+# TOP BAR + BOTÓN SUPERIOR
 # ─────────────────────────────────────────────────────────────
 
 fecha_txt = hoy_chile().strftime("%d/%m/%Y")
 
-st.markdown(f"""
+col_top_left, col_top_right = st.columns([1.1, 0.9])
+
+with col_top_left:
+    st.markdown(f"""
 <div class="ios-topbar">
   <span class="ios-topbar-title">LagartijApp</span>
   <span class="ios-topbar-date">{fecha_txt}</span>
 </div>
 """, unsafe_allow_html=True)
+
+with col_top_right:
+    st.markdown('<div class="btn-top-bath">', unsafe_allow_html=True)
+
+    if st.button("Fui al baño", use_container_width=True, key="btn_top_bath"):
+        registrar_con_pr(TIPO_FLEXIONES, 5, peso=peso_ult, rpe=rpe_actual)
+        registrar_con_pr(TIPO_PLANCHA, 20, peso=peso_ult, rpe=rpe_actual)
+        st.session_state.express_ok = True
+        st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1270,13 +1354,13 @@ st.markdown(f"""
 
   <div class="impact-card">
     <div class="impact-label">Racha</div>
-    <div class="impact-val c-orange">{racha}</div>
+    <div class="impact-val c-pink">{racha}</div>
     <div class="impact-detail">dias consecutivos</div>
   </div>
 
   <div class="impact-card">
     <div class="impact-label">Peso</div>
-    <div class="impact-val c-blue">{peso_txt}</div>
+    <div class="impact-val c-purple">{peso_txt}</div>
     <div class="impact-detail">ultimo registro</div>
   </div>
 </div>
@@ -1295,18 +1379,6 @@ tab_e, tab_d, tab_p, tab_a = st.tabs(["Entreno", "Oficina / Calle", "Peso", "Ana
 # ══════════════════════════════════════════════════════════════
 
 with tab_e:
-    st.markdown('<div class="btn-express">', unsafe_allow_html=True)
-
-    if st.button("Fui al bano  +5 flex / +20 s plancha", use_container_width=True, key="btn_express"):
-        registrar_con_pr(TIPO_FLEXIONES, 5, peso=peso_ult, rpe=rpe_actual)
-        registrar_con_pr(TIPO_PLANCHA, 20, peso=peso_ult, rpe=rpe_actual)
-        st.session_state.express_ok = True
-        st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
     st.markdown("""
 <div class="exercise-card">
   <div class="card-label">Ejercicio</div>
@@ -1480,7 +1552,7 @@ with tab_p:
     pdf = peso_semanal(df)
 
     if not pdf.empty:
-        st.line_chart(pdf, use_container_width=True, height=260, color="#0A84FF")
+        st.line_chart(pdf, use_container_width=True, height=260, color="#BF5AF2")
     else:
         st.info("Sin registros de peso aun.")
 
@@ -1559,7 +1631,7 @@ with tab_a:
 
   <div class="impact-card">
     <div class="impact-label">Racha</div>
-    <div class="impact-val c-orange">{racha}</div>
+    <div class="impact-val c-pink">{racha}</div>
     <div class="impact-detail">dias activos</div>
   </div>
 
