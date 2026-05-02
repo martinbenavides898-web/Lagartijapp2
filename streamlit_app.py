@@ -1,13 +1,13 @@
 """
-LagartijApp v3.4 — Apple Fitness Dark
+LagartijApp v3.5 — Apple Fitness Dark
 =====================================
 * Zona horaria forzada a America/Santiago
 * Fondo negro absoluto
+* Menú lateral visible con ingreso de peso, día libre y RPE
 * Anillos de actividad con flecha estilo Apple Fitness
 * Botón superior grande "Fui al baño"
-* Eliminado rectángulo vacío superior
-* Métrica Peso en lila Apple Fitness
-* Métrica Racha en rosa Apple Fitness
+* Métrica Peso en azul Apple
+* Métrica Racha en lila claro
 * Sin emojis en textos visibles
 """
 
@@ -92,6 +92,7 @@ st.markdown("""
   --blue: #0A84FF;
   --cyan: #00FFFF;
   --purple: #BF5AF2;
+  --lilac: #D0A2FF;
   --gray: #3A3A3C;
 }
 
@@ -111,7 +112,14 @@ html, body, [class*="css"] {
   background-image: none !important;
 }
 
-[data-testid="stHeader"],
+/* Mantiene visible el header porque ahí vive el botón del menú lateral */
+[data-testid="stHeader"] {
+  visibility: visible !important;
+  display: block !important;
+  background: transparent !important;
+  height: 3rem !important;
+}
+
 [data-testid="stToolbar"],
 [data-testid="stDecoration"],
 [data-testid="stStatusWidget"],
@@ -120,6 +128,7 @@ html, body, [class*="css"] {
   visibility: hidden !important;
 }
 
+/* Botón del menú lateral */
 [data-testid="collapsedControl"] {
   visibility: visible !important;
   display: flex !important;
@@ -361,6 +370,7 @@ iframe {
 .c-orange { color: var(--orange); }
 .c-blue { color: var(--blue); }
 .c-purple { color: var(--purple); }
+.c-lilac { color: var(--lilac); }
 
 /* Exercise module */
 .exercise-card {
@@ -1353,13 +1363,13 @@ st.markdown(f"""
 
   <div class="impact-card">
     <div class="impact-label">Racha</div>
-    <div class="impact-val c-pink">{racha}</div>
+    <div class="impact-val c-lilac">{racha}</div>
     <div class="impact-detail">dias consecutivos</div>
   </div>
 
   <div class="impact-card">
     <div class="impact-label">Peso</div>
-    <div class="impact-val c-purple">{peso_txt}</div>
+    <div class="impact-val c-blue">{peso_txt}</div>
     <div class="impact-detail">ultimo registro</div>
   </div>
 </div>
@@ -1551,7 +1561,7 @@ with tab_p:
     pdf = peso_semanal(df)
 
     if not pdf.empty:
-        st.line_chart(pdf, use_container_width=True, height=260, color="#BF5AF2")
+        st.line_chart(pdf, use_container_width=True, height=260, color="#0A84FF")
     else:
         st.info("Sin registros de peso aun.")
 
@@ -1630,7 +1640,7 @@ with tab_a:
 
   <div class="impact-card">
     <div class="impact-label">Racha</div>
-    <div class="impact-val c-pink">{racha}</div>
+    <div class="impact-val c-lilac">{racha}</div>
     <div class="impact-detail">dias activos</div>
   </div>
 
