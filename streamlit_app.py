@@ -1,10 +1,11 @@
 """
-LagartijApp v3.3 — Apple Fitness Dark
+LagartijApp v3.4 — Apple Fitness Dark
 =====================================
 * Zona horaria forzada a America/Santiago
 * Fondo negro absoluto
 * Anillos de actividad con flecha estilo Apple Fitness
 * Botón superior grande "Fui al baño"
+* Eliminado rectángulo vacío superior
 * Métrica Peso en lila Apple Fitness
 * Métrica Racha en rosa Apple Fitness
 * Sin emojis en textos visibles
@@ -158,8 +159,9 @@ html, body, [class*="css"] {
 .ios-topbar {
   display: flex;
   align-items: baseline;
+  justify-content: space-between;
   gap: 10px;
-  padding: 0 4px 8px;
+  padding: 0 4px 12px;
 }
 
 .ios-topbar-title {
@@ -177,16 +179,20 @@ html, body, [class*="css"] {
 }
 
 /* Top bath button */
+.btn-top-bath {
+  margin-bottom: 16px;
+}
+
 .btn-top-bath div[data-testid="stButton"] > button {
-  min-height: 58px !important;
-  border-radius: 18px !important;
+  min-height: 86px !important;
+  border-radius: 22px !important;
   background: var(--blue) !important;
   color: #FFFFFF !important;
-  font-size: 18px !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.3px !important;
+  font-size: 34px !important;
+  font-weight: 900 !important;
+  letter-spacing: -1px !important;
   border-color: rgba(10,132,255,0.60) !important;
-  box-shadow: 0 0 28px rgba(10,132,255,0.25) !important;
+  box-shadow: 0 0 34px rgba(10,132,255,0.28) !important;
 }
 
 /* Cards */
@@ -934,9 +940,6 @@ def pct(valor: int, meta: int) -> float:
 # ─────────────────────────────────────────────────────────────
 
 def arrow_polygon(cx: float, cy: float, r: float, progress: float, size: float) -> str:
-    """
-    Genera una pequeña flecha tangencial al final del progreso del anillo.
-    """
     import math
 
     if progress <= 0.02:
@@ -1249,26 +1252,22 @@ peso_txt = "Sin dato" if peso_ult is None else f"{peso_ult:.1f} kg"
 
 fecha_txt = hoy_chile().strftime("%d/%m/%Y")
 
-col_top_left, col_top_right = st.columns([1.1, 0.9])
-
-with col_top_left:
-    st.markdown(f"""
+st.markdown(f"""
 <div class="ios-topbar">
   <span class="ios-topbar-title">LagartijApp</span>
   <span class="ios-topbar-date">{fecha_txt}</span>
 </div>
 """, unsafe_allow_html=True)
 
-with col_top_right:
-    st.markdown('<div class="btn-top-bath">', unsafe_allow_html=True)
+st.markdown('<div class="btn-top-bath">', unsafe_allow_html=True)
 
-    if st.button("Fui al baño", use_container_width=True, key="btn_top_bath"):
-        registrar_con_pr(TIPO_FLEXIONES, 5, peso=peso_ult, rpe=rpe_actual)
-        registrar_con_pr(TIPO_PLANCHA, 20, peso=peso_ult, rpe=rpe_actual)
-        st.session_state.express_ok = True
-        st.rerun()
+if st.button("Fui al baño", use_container_width=True, key="btn_top_bath"):
+    registrar_con_pr(TIPO_FLEXIONES, 5, peso=peso_ult, rpe=rpe_actual)
+    registrar_con_pr(TIPO_PLANCHA, 20, peso=peso_ult, rpe=rpe_actual)
+    st.session_state.express_ok = True
+    st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────
