@@ -77,9 +77,13 @@ st.markdown("""
     background-image: none !important;
   }
 
-  /* ── Hide default chrome ── */
-  #MainMenu, footer { visibility: hidden; }
-  .stDeployButton    { display: none; }
+  /* ── Hide default chrome — CRITICAL ── */
+  #MainMenu, footer                { visibility: hidden; }
+  .stDeployButton                  { display: none; }
+  [data-testid="stHeader"]         { display: none !important; }
+  [data-testid="stToolbar"]        { display: none !important; }
+  [data-testid="stDecoration"]     { display: none !important; }
+  [data-testid="stStatusWidget"]   { display: none !important; }
 
   /* ── Sidebar ── */
   [data-testid="collapsedControl"] {
@@ -108,7 +112,7 @@ st.markdown("""
   /* ── Layout ── */
   .block-container {
     max-width: 860px;
-    padding: 0.5rem 1rem 5rem;
+    padding: 5rem 1rem 5rem !important;
     margin: 0 auto;
   }
 
@@ -163,16 +167,7 @@ st.markdown("""
     margin: 0 0 14px;
   }
 
-  /* ── Dashboard grid ── */
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 16px;
-  }
-  @media (max-width: 760px) {
-    .dashboard-grid { grid-template-columns: 1fr; }
-  }
+  /* ── dashboard layout now uses st.columns — no grid needed ── */
 
   .ring-panel {
     background: #1C1C1E;
@@ -182,12 +177,17 @@ st.markdown("""
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 300px;
+    width: 100%;
+    box-sizing: border-box;
   }
   .today-panel {
     background: #1C1C1E;
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 22px;
+    min-height: 300px;
+    box-sizing: border-box;
   }
 
   .panel-label {
@@ -226,23 +226,9 @@ st.markdown("""
   .pill-green  { color: var(--green); }
   .pill-orange { color: var(--orange); }
 
-  /* ── Rings SVG ── */
+  /* ── Rings SVG — styling is inline on SVG elements, not via CSS classes,
+       so Streamlit's sanitiser cannot strip the presentation attributes ── */
   .rings-svg { width: 260px; height: 260px; display: block; }
-  .ring-bg {
-    fill: none;
-    stroke: #2C2C2E;
-    stroke-width: 22;
-  }
-  .ring-progress {
-    fill: none;
-    stroke-linecap: round;
-    stroke-width: 22;
-    transform: rotate(-90deg);
-    transform-origin: 130px 130px;
-  }
-  .ring-center-title  { font-size: 11px; font-weight: 850; fill: #8E8E93; letter-spacing: 0.8px; text-transform: uppercase; }
-  .ring-center-number { font-size: 28px; font-weight: 950; fill: #FFFFFF; letter-spacing: -1px; }
-  .ring-center-sub    { font-size: 11px; font-weight: 750; fill: #8E8E93; }
 
   /* ── Impact grid ── */
   .impact-grid {
@@ -695,38 +681,68 @@ def porcentaje(valor: int, meta: int) -> float:
 
 
 def crear_anillos_svg(flexiones: int, plancha: int) -> str:
-    """Two concentric activity rings — pink (flexiones) outer, lime (plancha) inner."""
+    """Two concentric activity rings — pink (flexiones) outer, lime (plancha) inner.
+    
+    All SVG presentation attributes are set as inline attributes (not CSS classes)
+    so they are preserved after Streamlit's HTML sanitiser runs.
+    """
     outer_r = 105
     inner_r = 72
 
-    outer_c = 2 * 3.14159265 * outer_r
-    inner_c = 2 * 3.14159265 * inner_r
+    PI = 3.14159265358979
+    outer_c = 2 * PI * outer_r   # ≈ 659.7
+    inner_c = 2 * PI * inner_r   # ≈ 452.4
 
     outer_dash = outer_c * porcentaje(flexiones, META_VISUAL_FLEXIONES)
     inner_dash = inner_c * porcentaje(plancha,   META_VISUAL_PLANCHA)
 
-    flex_pct   = int(round(porcentaje(flexiones, META_VISUAL_FLEXIONES) * 100))
-    plancha_pct = int(round(porcentaje(plancha,  META_VISUAL_PLANCHA)   * 100))
+    flex_pct    = int(round(porcentaje(flexiones, META_VISUAL_FLEXIONES) * 100))
+    plancha_pct = int(round(porcentaje(plancha,   META_VISUAL_PLANCHA)   * 100))
 
-    return f"""
-    <svg class="rings-svg" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
-      <!-- outer ring bg + progress (flexiones / pink) -->
-      <circle class="ring-bg" cx="130" cy="130" r="{outer_r}"/>
-      <circle class="ring-progress" cx="130" cy="130" r="{outer_r}"
-              stroke="#FF2D55"
-              stroke-dasharray="{outer_dash:.2f} {outer_c:.2f}"/>
+    # Common inline styles for progress arcs
+    base_arc = (
+        'fill="none" '
+        'stroke-linecap="round" '
+        'stroke-width="22" '
+        'transform="rotate(-90 130 130)"'
+    )
 
-      <!-- inner ring bg + progress (plancha / lime) -->
-      <circle class="ring-bg" cx="130" cy="130" r="{inner_r}"/>
-      <circle class="ring-progress" cx="130" cy="130" r="{inner_r}"
-              stroke="#A1FF00"
-              stroke-dasharray="{inner_dash:.2f} {inner_c:.2f}"/>
+    return f"""<svg viewBox="0 0 260 260" width="260" height="260"
+     xmlns="http://www.w3.org/2000/svg"
+     style="display:block;overflow:visible;">
 
-      <!-- centre text -->
-      <text x="130" y="113" text-anchor="middle" class="ring-center-title">ANILLOS</text>
-      <text x="130" y="145" text-anchor="middle" class="ring-center-number">{flex_pct}% · {plancha_pct}%</text>
-      <text x="130" y="167" text-anchor="middle" class="ring-center-sub">50 flex · 120 s plancha</text>
-    </svg>"""
+  <!-- outer track (flexiones) -->
+  <circle cx="130" cy="130" r="{outer_r}"
+    fill="none" stroke="#2C2C2E" stroke-width="22"/>
+  <circle cx="130" cy="130" r="{outer_r}"
+    {base_arc}
+    stroke="#FF2D55"
+    stroke-dasharray="{outer_dash:.2f} {outer_c:.2f}"/>
+
+  <!-- inner track (plancha) -->
+  <circle cx="130" cy="130" r="{inner_r}"
+    fill="none" stroke="#2C2C2E" stroke-width="22"/>
+  <circle cx="130" cy="130" r="{inner_r}"
+    {base_arc}
+    stroke="#A1FF00"
+    stroke-dasharray="{inner_dash:.2f} {inner_c:.2f}"/>
+
+  <!-- centre text -->
+  <text x="130" y="112" text-anchor="middle"
+    font-family="Inter,-apple-system,sans-serif"
+    font-size="11" font-weight="800"
+    fill="#8E8E93" letter-spacing="0.8">ANILLOS</text>
+
+  <text x="130" y="144" text-anchor="middle"
+    font-family="Inter,-apple-system,sans-serif"
+    font-size="26" font-weight="800"
+    fill="#FFFFFF" letter-spacing="-1">{flex_pct}% · {plancha_pct}%</text>
+
+  <text x="130" y="166" text-anchor="middle"
+    font-family="Inter,-apple-system,sans-serif"
+    font-size="11" font-weight="700"
+    fill="#8E8E93">50 flex · 120 s plancha</text>
+</svg>"""
 
 
 def sync_deuda(input_key: str, state_key: str) -> None:
@@ -859,22 +875,31 @@ if st.session_state.sick_ok:
 # DASHBOARD — ANILLOS + PANEL DE HOY
 # ─────────────────────────────────────────────────────────────
 
-anillos_html = crear_anillos_svg(flexiones_hoy, plancha_hoy)
 peso_texto   = "Sin dato" if peso_ultimo is None else f"{peso_ultimo:.1f} kg"
 
-st.markdown(f"""
-<div class="dashboard-grid">
-  <div class="ring-panel">
-    {anillos_html}
-  </div>
-  <div class="today-panel">
-    <div class="panel-label">Total de hoy</div>
-    <div class="today-big">{flexiones_hoy}</div>
-    <div class="today-row">
-      <span class="pill pill-pink">💪 Flexiones</span>
-      <span class="pill pill-green">🧱 {format_seconds(plancha_hoy)} plancha</span>
-      <span class="pill pill-orange">🔥 Racha {racha_actual} días</span>
-    </div>
+# ── Render rings panel and today panel side by side.
+# The SVG must be rendered in its own st.markdown call so Streamlit's
+# HTML sanitiser does not strip SVG-specific attributes (stroke-dasharray,
+# transform-origin, etc.) that get dropped when the SVG is embedded inside
+# a larger interpolated f-string.
+
+col_rings, col_today = st.columns(2)
+
+with col_rings:
+    st.markdown(
+        f'<div class="ring-panel">{crear_anillos_svg(flexiones_hoy, plancha_hoy)}</div>',
+        unsafe_allow_html=True,
+    )
+
+with col_today:
+    st.markdown(f"""
+<div class="today-panel">
+  <div class="panel-label">Total de hoy</div>
+  <div class="today-big">{flexiones_hoy}</div>
+  <div class="today-row">
+    <span class="pill pill-pink">💪 Flexiones</span>
+    <span class="pill pill-green">🧱 {format_seconds(plancha_hoy)} plancha</span>
+    <span class="pill pill-orange">🔥 Racha {racha_actual} días</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
