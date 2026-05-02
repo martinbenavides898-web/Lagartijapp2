@@ -1,13 +1,14 @@
 """
-LagartijApp v3.5 — Apple Fitness Dark
+LagartijApp v3.6 — Apple Fitness Dark
 =====================================
 * Zona horaria forzada a America/Santiago
 * Fondo negro absoluto
-* Menú lateral visible con ingreso de peso, día libre y RPE
-* Anillos de actividad con flecha estilo Apple Fitness
-* Botón superior grande "Fui al baño"
+* Menú lateral visible
+* Peso editable desde la pestaña Peso y desde sidebar
+* Botón superior "FUI AL BAÑO" integrado con la estética general
 * Métrica Peso en azul Apple
 * Métrica Racha en lila claro
+* Anillos de actividad con flecha estilo Apple Fitness
 * Sin emojis en textos visibles
 """
 
@@ -187,19 +188,21 @@ html, body, [class*="css"] {
   color: var(--muted);
 }
 
-/* Top bath button */
+/* Top bath button integrado */
 .btn-top-bath {
   margin-bottom: 16px;
 }
 
 .btn-top-bath div[data-testid="stButton"] > button {
-  min-height: 86px !important;
+  min-height: 88px !important;
   border-radius: 22px !important;
   background: var(--blue) !important;
   color: #FFFFFF !important;
-  font-size: 34px !important;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important;
+  font-size: 32px !important;
   font-weight: 900 !important;
-  letter-spacing: -1px !important;
+  letter-spacing: -0.8px !important;
+  text-transform: uppercase !important;
   border-color: rgba(10,132,255,0.60) !important;
   box-shadow: 0 0 34px rgba(10,132,255,0.28) !important;
 }
@@ -1186,20 +1189,21 @@ df = cargar_datos()
 with st.sidebar:
     st.markdown("**Peso diario**")
 
-    peso_input = st.number_input(
+    peso_sidebar = st.number_input(
         "Peso (kg)",
         min_value=0.0,
         max_value=300.0,
         value=0.0,
         step=0.1,
-        format="%.1f"
+        format="%.1f",
+        key="peso_sidebar"
     )
 
     st.markdown('<div class="btn-subtle">', unsafe_allow_html=True)
 
-    if st.button("Guardar peso", use_container_width=True):
-        if peso_input > 0:
-            agregar_registro(TIPO_PESO, 0, peso=float(peso_input))
+    if st.button("Guardar peso", use_container_width=True, key="btn_guardar_peso_sidebar"):
+        if peso_sidebar > 0:
+            agregar_registro(TIPO_PESO, 0, peso=float(peso_sidebar))
             st.session_state.guardado_ok = True
             st.rerun()
         else:
@@ -1213,7 +1217,7 @@ with st.sidebar:
 
     st.markdown('<div class="btn-subtle">', unsafe_allow_html=True)
 
-    if st.button("Marcar dia libre", use_container_width=True):
+    if st.button("Marcar dia libre", use_container_width=True, key="btn_dia_libre_sidebar"):
         hd = datos_hoy(cargar_datos())
         ya = not hd.empty and (hd["Tipo_Ejercicio"] == TIPO_DESCANSO).any()
 
@@ -1271,7 +1275,7 @@ st.markdown(f"""
 
 st.markdown('<div class="btn-top-bath">', unsafe_allow_html=True)
 
-if st.button("Fui al baño", use_container_width=True, key="btn_top_bath"):
+if st.button("FUI AL BAÑO", use_container_width=True, key="btn_top_bath"):
     registrar_con_pr(TIPO_FLEXIONES, 5, peso=peso_ult, rpe=rpe_actual)
     registrar_con_pr(TIPO_PLANCHA, 20, peso=peso_ult, rpe=rpe_actual)
     st.session_state.express_ok = True
@@ -1553,8 +1557,38 @@ with tab_p:
     st.markdown("""
 <div class="fit-card">
   <div class="card-label">Peso</div>
+  <div class="card-title">Registro de peso</div>
+  <div class="card-sub">Ingresa tu peso actual y guardalo. Abajo se muestra la evolucion semanal.</div>
+</div>
+""", unsafe_allow_html=True)
+
+    peso_tab = st.number_input(
+        "Peso actual (kg)",
+        min_value=0.0,
+        max_value=300.0,
+        value=0.0,
+        step=0.1,
+        format="%.1f",
+        key="peso_tab"
+    )
+
+    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
+
+    if st.button("Guardar peso", use_container_width=True, key="btn_guardar_peso_tab"):
+        if peso_tab > 0:
+            agregar_registro(TIPO_PESO, 0, peso=float(peso_tab))
+            st.session_state.guardado_ok = True
+            st.rerun()
+        else:
+            st.warning("Ingresa un peso valido.")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("""
+<div class="fit-card" style="margin-top:16px">
+  <div class="card-label">Peso</div>
   <div class="card-title">Evolucion semanal</div>
-  <div class="card-sub">Registra desde la barra lateral. Ultimos 7 dias.</div>
+  <div class="card-sub">Ultimos 7 dias registrados.</div>
 </div>
 """, unsafe_allow_html=True)
 
