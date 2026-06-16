@@ -19,6 +19,8 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+import gspread
+from google.oauth2.service_account import Credentials
 
 try:
     from zoneinfo import ZoneInfo
@@ -716,6 +718,21 @@ def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
 def guardar_df(df: pd.DataFrame) -> None:
     normalizar_df(df).to_csv(DATA_FILE, index=False)
 
+@st.cache_resource
+def conectar_sheet():
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    creds = Credentials.from_service_account_info(
+        dict(st.secrets["gcp_service_account"]),
+        scopes=scope,
+    )
+
+    client = gspread.authorize(creds)
+
+    return client.open("LagartijApp_DB").sheet1
 
 def cargar_datos() -> pd.DataFrame:
     if os.path.exists(DATA_FILE):
@@ -1738,3 +1755,5 @@ with tab_a:
     )
 
     st.markdown("</div>", unsafe_allow_html=True)
+    if st.button("PROBAR GOOGLE SHEETS"):
+    st.write("BOTON APRETADO")
