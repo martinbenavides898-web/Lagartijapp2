@@ -1757,5 +1757,18 @@ with tab_a:
     st.markdown("</div>", unsafe_allow_html=True)
 
 if st.button("PROBAR GOOGLE SHEETS"):
-    st.write("BOTON APRETADO")
-    
+    try:
+        sheet = conectar_sheet()
+
+        sheet.append_row([
+            str(ahora_chile()),
+            "TEST",
+            999,
+            "",
+            "",
+        ])
+
+        st.success("FILA ESCRITA EN GOOGLE SHEETS")
+
+    except Exception as e:
+        st.error(str(e))
