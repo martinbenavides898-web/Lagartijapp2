@@ -718,7 +718,6 @@ def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
 def guardar_df(df: pd.DataFrame) -> None:
     normalizar_df(df).to_csv(DATA_FILE, index=False)
 
-@st.cache_resource
 def conectar_sheet():
     scope = [
         "https://www.googleapis.com/auth/spreadsheets",
@@ -747,18 +746,43 @@ def cargar_datos() -> pd.DataFrame:
 
 
 def agregar_registro(tipo: str, cantidad: int, peso=None, rpe=None) -> None:
-    df = cargar_datos()
+    fecha_actual = ahora_chile()
+    
+    # 1. Guardar en Google Sheets PRIMERO
+    try:
+        sheet = conectar_sheet()
+        
+        # Filtramos estrictamente los vacíos
+        val_peso = str(peso) if peso not in [None, 0, 0.0, ""] else ""
+        val_rpe = str(rpe) if rpe not in [None, 0, ""] else ""
+        
+        fila_sheets = [
+            fecha_actual.strftime("%Y-%m-%d %H:%M:%S"),
+            str(tipo),
+            str(int(cantidad)),
+            val_peso,
+            val_rpe,
+            ""
+        ]
+        
+        # USER_ENTERED evita que Sheets rechace formatos internos
+        sheet.append_row(fila_sheets, value_input_option='USER_ENTERED')
+        
+    except Exception as e:
+        # Freno de emergencia: Mostramos el error en rojo y detenemos la app
+        st.error(f"🚨 ERROR FATAL DE GOOGLE SHEETS: {e}")
+        st.stop() 
 
+    # 2. Guardar localmente en CSV DESPUÉS
+    df = cargar_datos()
     nuevo = pd.DataFrame([{
-        "Fecha": ahora_chile(),
+        "Fecha": fecha_actual,
         "Tipo_Ejercicio": tipo,
         "Cantidad": int(cantidad),
         "Peso": peso,
         "RPE_Esfuerzo": rpe,
     }])
-
     guardar_df(pd.concat([df, nuevo], ignore_index=True))
-
 
 def datos_hoy(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
@@ -1771,4 +1795,4 @@ if st.button("PROBAR GOOGLE SHEETS"):
         st.success("FILA ESCRITA EN GOOGLE SHEETS")
 
     except Exception as e:
-        st.error(str(e))
+        st.exception(e)
