@@ -1,15 +1,11 @@
+# -*- coding: utf-8 -*-
 """
-LagartijApp v3.6 — Apple Fitness Dark
-=====================================
-* Zona horaria forzada a America/Santiago
-* Fondo negro absoluto
-* Menú lateral visible
-* Peso editable desde la pestaña Peso y desde sidebar
-* Botón superior "FUI AL BAÑO" integrado con la estética general
-* Métrica Peso en azul Apple
-* Métrica Racha en lila claro
-* Anillos de actividad con flecha estilo Apple Fitness
-* Sin emojis en textos visibles
+LagartijApp v4.0 — Apple Fitness Dark (Full Routine)
+====================================================
+* Conexión a Google Sheets consolidada (TOML fix)
+* Integración de Sentadillas (Cyan) y Estocadas (Orange)
+* Botón Express actualizado para rutina completa
+* Estética estricta: sin emojis, fondo absolute black
 """
 
 import os
@@ -47,13 +43,17 @@ COLUMNAS = ["Fecha", "Tipo_Ejercicio", "Cantidad", "Peso", "RPE_Esfuerzo"]
 
 TIPO_FLEXIONES = "Flexiones"
 TIPO_PLANCHA = "Plancha"
+TIPO_SENTADILLAS = "Sentadillas"
+TIPO_ESTOCADAS = "Estocadas"
 TIPO_PESO = "Peso"
 TIPO_DESCANSO = "Dia Libre"
 
-TIPOS_RACHA = [TIPO_FLEXIONES, TIPO_PLANCHA, TIPO_DESCANSO]
+TIPOS_RACHA = [TIPO_FLEXIONES, TIPO_PLANCHA, TIPO_SENTADILLAS, TIPO_ESTOCADAS, TIPO_DESCANSO]
 
 META_FLEXIONES = 50
 META_PLANCHA = 120
+META_SENTADILLAS = 50
+META_ESTOCADAS = 50
 
 
 # ─────────────────────────────────────────────────────────────
@@ -63,9 +63,7 @@ META_PLANCHA = 120
 def ahora_chile() -> datetime:
     if CHILE_TZ is not None:
         return datetime.now(CHILE_TZ).replace(tzinfo=None)
-
     return datetime.utcnow() - timedelta(hours=4)
-
 
 def hoy_chile():
     return ahora_chile().date()
@@ -115,7 +113,6 @@ html, body, [class*="css"] {
   background-image: none !important;
 }
 
-/* Mantiene visible el header porque ahí vive el botón del menú lateral */
 [data-testid="stHeader"] {
   visibility: visible !important;
   display: block !important;
@@ -131,7 +128,6 @@ html, body, [class*="css"] {
   visibility: hidden !important;
 }
 
-/* Botón del menú lateral */
 [data-testid="collapsedControl"] {
   visibility: visible !important;
   display: flex !important;
@@ -167,7 +163,6 @@ html, body, [class*="css"] {
   margin: 0 auto;
 }
 
-/* Top bar */
 .ios-topbar {
   display: flex;
   align-items: baseline;
@@ -190,7 +185,6 @@ html, body, [class*="css"] {
   color: var(--muted);
 }
 
-/* Top bath button integrado */
 .btn-top-bath {
   margin-bottom: 16px;
 }
@@ -209,21 +203,12 @@ html, body, [class*="css"] {
   box-shadow: 0 0 34px rgba(10,132,255,0.28) !important;
 }
 
-/* Cards */
 .fit-card {
   background: #1C1C1E;
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 22px;
   margin-bottom: 16px;
-}
-
-.fit-card-soft {
-  background: #2C2C2E;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 12px;
 }
 
 .card-label {
@@ -250,7 +235,6 @@ html, body, [class*="css"] {
   margin: 0 0 14px;
 }
 
-/* Rings */
 .rings-master-card {
   background: #1C1C1E;
   border: 1px solid var(--border);
@@ -272,13 +256,7 @@ html, body, [class*="css"] {
   justify-content: center;
 }
 
-iframe {
-  border: 0 !important;
-  background: #1C1C1E !important;
-  border-radius: 20px !important;
-}
-
-[data-testid="stIFrame"] {
+iframe, [data-testid="stIFrame"] {
   border: 0 !important;
   background: #1C1C1E !important;
   border-radius: 20px !important;
@@ -288,13 +266,13 @@ iframe {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 18px;
+  gap: 12px;
   height: 100%;
   min-height: 250px;
 }
 
 .ring-stat {
-  padding: 14px 0;
+  padding: 10px 0;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
@@ -303,29 +281,21 @@ iframe {
 }
 
 .ring-stat-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.8px;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .ring-stat-value {
-  font-size: 42px;
+  font-size: 32px;
   line-height: 0.95;
   font-weight: 800;
-  letter-spacing: -2px;
+  letter-spacing: -1px;
 }
 
-.ring-stat-sub {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  margin-top: 8px;
-}
-
-/* Impact grid */
 .impact-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -373,17 +343,18 @@ iframe {
 .c-pink { color: var(--pink); }
 .c-lime { color: var(--lime); }
 .c-orange { color: var(--orange); }
+.c-cyan { color: var(--cyan); }
 .c-blue { color: var(--blue); }
 .c-purple { color: var(--purple); }
 .c-lilac { color: var(--lilac); }
 
-/* Exercise module */
 .exercise-card {
   background: #1C1C1E;
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 22px;
   margin-bottom: 18px;
+  margin-top: 10px;
 }
 
 .exercise-title {
@@ -403,10 +374,10 @@ iframe {
 
 .manual-row {
   margin-top: 10px;
+  margin-bottom: 24px;
   opacity: 0.86;
 }
 
-/* Debt display */
 .debt-display {
   background: rgba(255,149,0,0.08);
   border: 1px solid rgba(255,149,0,0.30);
@@ -432,214 +403,75 @@ iframe {
   margin-top: 6px;
 }
 
-/* Calendar */
-.cal-wrap {
-  margin-top: 6px;
-}
-
-.cal-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 7px;
-}
-
+.cal-wrap { margin-top: 6px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
 .cal-cell {
-  aspect-ratio: 1 / 1;
-  border-radius: 12px;
-  background: #1C1C1E;
-  border: 1px solid rgba(255,255,255,0.07);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  opacity: 0.40;
+  aspect-ratio: 1 / 1; border-radius: 12px; background: #1C1C1E;
+  border: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column;
+  justify-content: center; align-items: center; opacity: 0.40;
 }
+.cal-future { opacity: 0.18; }
+.cal-today { opacity: 1; outline: 2px solid var(--pink); outline-offset: 2px; }
+.cal-done { background: var(--lime); border-color: var(--lime); opacity: 0.72; box-shadow: 0 0 14px rgba(161,255,0,0.45); }
+.cal-rest { background: var(--orange); border-color: var(--orange); opacity: 0.72; }
+.cal-done.cal-today, .cal-rest.cal-today { opacity: 1; }
+.cal-day { font-size: 14px; font-weight: 800; color: #FFFFFF; line-height: 1; }
+.cal-done .cal-day, .cal-rest .cal-day { color: #000000; }
+.cal-wd { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.5); margin-top: 3px; }
+.cal-done .cal-wd, .cal-rest .cal-wd { color: rgba(0,0,0,0.55); }
+.cal-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; justify-content: center; font-size: 11px; font-weight: 700; color: var(--muted); line-height: 1.3; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+.dot-lime { background: var(--lime); box-shadow: 0 0 8px rgba(161,255,0,.6); }
+.dot-orange { background: var(--orange); }
+.dot-gray { background: var(--gray); }
 
-.cal-cell.cal-future {
-  opacity: 0.18;
-}
-
-.cal-cell.cal-today {
-  opacity: 1;
-  outline: 2px solid var(--pink);
-  outline-offset: 2px;
-}
-
-.cal-cell.cal-done {
-  background: var(--lime);
-  border-color: var(--lime);
-  opacity: 0.72;
-  box-shadow: 0 0 14px rgba(161,255,0,0.45);
-}
-
-.cal-cell.cal-rest {
-  background: var(--orange);
-  border-color: var(--orange);
-  opacity: 0.72;
-}
-
-.cal-cell.cal-done.cal-today,
-.cal-cell.cal-rest.cal-today {
-  opacity: 1;
-}
-
-.cal-day {
-  font-size: 14px;
-  font-weight: 800;
-  color: #FFFFFF;
-  line-height: 1;
-}
-
-.cal-done .cal-day,
-.cal-rest .cal-day {
-  color: #000000;
-}
-
-.cal-wd {
-  font-size: 9px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.5);
-  margin-top: 3px;
-}
-
-.cal-done .cal-wd,
-.cal-rest .cal-wd {
-  color: rgba(0,0,0,0.55);
-}
-
-.cal-legend {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  line-height: 1.3;
-}
-
-.dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 5px;
-  vertical-align: middle;
-}
-
-.dot-lime {
-  background: var(--lime);
-  box-shadow: 0 0 8px rgba(161,255,0,.6);
-}
-
-.dot-orange {
-  background: var(--orange);
-}
-
-.dot-gray {
-  background: var(--gray);
-}
-
-/* Buttons */
 div[data-testid="stButton"] > button {
-  border-radius: 16px !important;
-  min-height: 52px !important;
-  font-size: 15px !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.2px !important;
-  border: 1px solid var(--border) !important;
-  background: #2C2C2E !important;
-  color: #FFFFFF !important;
-  width: 100% !important;
+  border-radius: 16px !important; min-height: 52px !important; font-size: 15px !important;
+  font-weight: 800 !important; letter-spacing: -0.2px !important; border: 1px solid var(--border) !important;
+  background: #2C2C2E !important; color: #FFFFFF !important; width: 100% !important;
   transition: transform .08s ease, opacity .1s ease !important;
 }
-
-div[data-testid="stButton"] > button:hover {
-  transform: scale(0.985);
-  opacity: .92;
-}
-
-div[data-testid="stButton"] > button:active {
-  transform: scale(0.96);
-  opacity: .78;
-}
+div[data-testid="stButton"] > button:hover { transform: scale(0.985); opacity: .92; }
+div[data-testid="stButton"] > button:active { transform: scale(0.96); opacity: .78; }
 
 .btn-pink div[data-testid="stButton"] > button {
-  background: var(--pink) !important;
-  color: #FFFFFF !important;
-  border-color: rgba(255,45,85,0.55) !important;
-  min-height: 68px !important;
-  font-size: 18px !important;
+  background: var(--pink) !important; color: #FFFFFF !important;
+  border-color: rgba(255,45,85,0.55) !important; min-height: 68px !important; font-size: 18px !important;
 }
-
 .btn-lime div[data-testid="stButton"] > button {
-  background: var(--lime) !important;
-  color: #000000 !important;
-  border-color: rgba(161,255,0,0.55) !important;
-  min-height: 68px !important;
-  font-size: 18px !important;
+  background: var(--lime) !important; color: #000000 !important;
+  border-color: rgba(161,255,0,0.55) !important; min-height: 68px !important; font-size: 18px !important;
 }
-
+.btn-cyan div[data-testid="stButton"] > button {
+  background: var(--cyan) !important; color: #000000 !important;
+  border-color: rgba(0,255,255,0.55) !important; min-height: 68px !important; font-size: 18px !important;
+}
+.btn-orange-big div[data-testid="stButton"] > button {
+  background: var(--orange) !important; color: #000000 !important;
+  border-color: rgba(255,149,0,0.55) !important; min-height: 68px !important; font-size: 18px !important;
+}
 .btn-orange div[data-testid="stButton"] > button {
-  background: var(--orange) !important;
-  color: #000000 !important;
-  border-color: rgba(255,149,0,0.55) !important;
+  background: var(--orange) !important; color: #000000 !important; border-color: rgba(255,149,0,0.55) !important;
 }
-
 .btn-subtle div[data-testid="stButton"] > button {
-  background: #2C2C2E !important;
-  color: var(--muted) !important;
-  border-color: rgba(255,255,255,0.07) !important;
+  background: #2C2C2E !important; color: var(--muted) !important; border-color: rgba(255,255,255,0.07) !important;
 }
-
 .btn-blue div[data-testid="stButton"] > button {
-  background: var(--blue) !important;
-  color: #FFFFFF !important;
-  border-color: rgba(10,132,255,0.55) !important;
+  background: var(--blue) !important; color: #FFFFFF !important; border-color: rgba(10,132,255,0.55) !important;
 }
 
-/* Inputs */
 div[data-testid="stNumberInput"] label {
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--muted) !important;
+  font-size: 11px !important; font-weight: 700 !important; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--muted) !important;
 }
-
 div[data-testid="stNumberInput"] input {
-  border-radius: 12px !important;
-  background: #2C2C2E !important;
-  border: 1px solid var(--border) !important;
-  color: #FFFFFF !important;
-  font-size: 15px !important;
-  min-height: 42px !important;
+  border-radius: 12px !important; background: #2C2C2E !important; border: 1px solid var(--border) !important;
+  color: #FFFFFF !important; font-size: 15px !important; min-height: 42px !important;
 }
-
-div[data-testid="stSlider"] label {
-  color: var(--muted) !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-}
-
-/* Tabs */
-[data-testid="stTabs"] button {
-  border-radius: 999px !important;
-  font-weight: 800 !important;
-  font-size: 14px !important;
-  color: var(--muted) !important;
-}
-
-[data-testid="stTabs"] [aria-selected="true"] {
-  color: var(--lime) !important;
-}
-
-/* Alerts */
-.stSuccess, .stWarning, .stInfo {
-  border-radius: 16px !important;
-  border: none !important;
-}
+div[data-testid="stSlider"] label { color: var(--muted) !important; font-size: 12px !important; font-weight: 700 !important; }
+[data-testid="stTabs"] button { border-radius: 999px !important; font-weight: 800 !important; font-size: 14px !important; color: var(--muted) !important; }
+[data-testid="stTabs"] [aria-selected="true"] { color: var(--lime) !important; }
+.stSuccess, .stWarning, .stInfo, .stError { border-radius: 16px !important; border: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -651,14 +483,12 @@ div[data-testid="stSlider"] label {
 def crear_df_vacio() -> pd.DataFrame:
     return pd.DataFrame(columns=COLUMNAS)
 
-
 def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return crear_df_vacio()
 
     if all(c in df.columns for c in COLUMNAS):
         out = df[COLUMNAS].copy()
-
     elif "fecha" in df.columns and "cantidad" in df.columns:
         out = pd.DataFrame({
             "Fecha": df["fecha"],
@@ -667,35 +497,15 @@ def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
             "Peso": None,
             "RPE_Esfuerzo": None,
         })
-
     elif "fecha" in df.columns and ("lagartijas" in df.columns or "plancha_segundos" in df.columns):
         rows = []
-
         for _, row in df.iterrows():
             f = row.get("fecha", ahora_chile().strftime("%Y-%m-%d %H:%M"))
             fl = int(row.get("lagartijas", 0) or 0)
             pl = int(row.get("plancha_segundos", 0) or 0)
-
-            if fl > 0:
-                rows.append({
-                    "Fecha": f,
-                    "Tipo_Ejercicio": TIPO_FLEXIONES,
-                    "Cantidad": fl,
-                    "Peso": None,
-                    "RPE_Esfuerzo": None,
-                })
-
-            if pl > 0:
-                rows.append({
-                    "Fecha": f,
-                    "Tipo_Ejercicio": TIPO_PLANCHA,
-                    "Cantidad": pl,
-                    "Peso": None,
-                    "RPE_Esfuerzo": None,
-                })
-
+            if fl > 0: rows.append({"Fecha": f, "Tipo_Ejercicio": TIPO_FLEXIONES, "Cantidad": fl, "Peso": None, "RPE_Esfuerzo": None})
+            if pl > 0: rows.append({"Fecha": f, "Tipo_Ejercicio": TIPO_PLANCHA, "Cantidad": pl, "Peso": None, "RPE_Esfuerzo": None})
         out = pd.DataFrame(rows, columns=COLUMNAS)
-
     else:
         out = crear_df_vacio()
 
@@ -714,7 +524,6 @@ def normalizar_df(df: pd.DataFrame) -> pd.DataFrame:
 
     return out[COLUMNAS]
 
-
 def guardar_df(df: pd.DataFrame) -> None:
     normalizar_df(df).to_csv(DATA_FILE, index=False)
 
@@ -723,27 +532,20 @@ def conectar_sheet():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
     ]
-
     creds = Credentials.from_service_account_info(
         dict(st.secrets["gcp_service_account"]),
         scopes=scope,
     )
-
     client = gspread.authorize(creds)
-
     return client.open("LagartijApp_DB").sheet1
 
 def cargar_datos() -> pd.DataFrame:
-    if os.path.exists(DATA_FILE):
-        return normalizar_df(pd.read_csv(DATA_FILE))
-
+    if os.path.exists(DATA_FILE): return normalizar_df(pd.read_csv(DATA_FILE))
     if os.path.exists(OLD_DATA_FILE):
         df = normalizar_df(pd.read_csv(OLD_DATA_FILE))
         guardar_df(df)
         return df
-
     return crear_df_vacio()
-
 
 def agregar_registro(tipo: str, cantidad: int, peso=None, rpe=None) -> None:
     fecha_actual = ahora_chile()
@@ -751,8 +553,6 @@ def agregar_registro(tipo: str, cantidad: int, peso=None, rpe=None) -> None:
     # 1. Guardar en Google Sheets PRIMERO
     try:
         sheet = conectar_sheet()
-        
-        # Filtramos estrictamente los vacíos
         val_peso = str(peso) if peso not in [None, 0, 0.0, ""] else ""
         val_rpe = str(rpe) if rpe not in [None, 0, ""] else ""
         
@@ -764,13 +564,10 @@ def agregar_registro(tipo: str, cantidad: int, peso=None, rpe=None) -> None:
             val_rpe,
             ""
         ]
-        
-        # USER_ENTERED evita que Sheets rechace formatos internos
         sheet.append_row(fila_sheets, value_input_option='USER_ENTERED')
         
     except Exception as e:
-        # Freno de emergencia: Mostramos el error en rojo y detenemos la app
-        st.error(f"🚨 ERROR FATAL DE GOOGLE SHEETS: {e}")
+        st.error(f"ERROR FATAL DE GOOGLE SHEETS: {e}")
         st.stop() 
 
     # 2. Guardar localmente en CSV DESPUÉS
@@ -784,74 +581,42 @@ def agregar_registro(tipo: str, cantidad: int, peso=None, rpe=None) -> None:
     }])
     guardar_df(pd.concat([df, nuevo], ignore_index=True))
 
+
 def datos_hoy(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return crear_df_vacio()
-
+    if df.empty: return crear_df_vacio()
     return df[df["Fecha"].dt.date == hoy_chile()]
-
 
 def total_hoy(df: pd.DataFrame, tipo: str) -> int:
     hoy = datos_hoy(df)
-
-    if hoy.empty:
-        return 0
-
+    if hoy.empty: return 0
     return int(hoy.loc[hoy["Tipo_Ejercicio"] == tipo, "Cantidad"].sum())
 
-
 def peso_actual(df: pd.DataFrame):
-    if df.empty:
-        return None
-
+    if df.empty: return None
     p = df.dropna(subset=["Peso"])
     p = p[p["Peso"] > 0]
-
-    if p.empty:
-        return None
-
+    if p.empty: return None
     return float(p.sort_values("Fecha").iloc[-1]["Peso"])
-
 
 def fmt(seconds: int) -> str:
     s = int(seconds)
-
-    if s < 60:
-        return f"{s}s"
-
+    if s < 60: return f"{s}s"
     m, sec = divmod(s, 60)
-
-    if m < 60:
-        return f"{m}:{sec:02d}"
-
+    if m < 60: return f"{m}:{sec:02d}"
     h, m = divmod(m, 60)
     return f"{h}h {m}m {sec}s"
 
-
 def max_diario(df: pd.DataFrame, tipo: str, excluir_hoy: bool = True) -> int:
-    if df.empty:
-        return 0
-
+    if df.empty: return 0
     t = df[df["Tipo_Ejercicio"] == tipo].copy()
-
-    if excluir_hoy:
-        t = t[t["Fecha"].dt.date != hoy_chile()]
-
-    if t.empty:
-        return 0
-
+    if excluir_hoy: t = t[t["Fecha"].dt.date != hoy_chile()]
+    if t.empty: return 0
     daily = t.groupby(t["Fecha"].dt.date)["Cantidad"].sum()
-
-    if daily.empty:
-        return 0
-
+    if daily.empty: return 0
     return int(daily.max())
 
-
 def registrar_con_pr(tipo: str, cantidad: int, peso=None, rpe=None) -> None:
-    if cantidad <= 0:
-        return
-
+    if cantidad <= 0: return
     df0 = cargar_datos()
     prev = max_diario(df0, tipo, excluir_hoy=True)
     hoy_n = total_hoy(df0, tipo)
@@ -859,290 +624,137 @@ def registrar_con_pr(tipo: str, cantidad: int, peso=None, rpe=None) -> None:
     agregar_registro(tipo=tipo, cantidad=int(cantidad), peso=peso, rpe=rpe)
 
     nuevo = hoy_n + int(cantidad)
-
     if nuevo > prev:
         val = fmt(nuevo) if tipo == TIPO_PLANCHA else f"{nuevo} reps"
         st.session_state.pr_msg.append(f"Record personal: {tipo} — {val}")
         st.session_state.show_balloons = True
 
-
 def calcular_racha(df: pd.DataFrame) -> int:
-    if df.empty:
-        return 0
-
+    if df.empty: return 0
     temp = df[df["Tipo_Ejercicio"].isin(TIPOS_RACHA)].copy()
-
     temp = temp[
-        ((temp["Tipo_Ejercicio"].isin([TIPO_FLEXIONES, TIPO_PLANCHA])) & (temp["Cantidad"] > 0)) |
+        ((temp["Tipo_Ejercicio"].isin([TIPO_FLEXIONES, TIPO_PLANCHA, TIPO_SENTADILLAS, TIPO_ESTOCADAS])) & (temp["Cantidad"] > 0)) |
         (temp["Tipo_Ejercicio"] == TIPO_DESCANSO)
     ]
-
     activas = set(temp["Fecha"].dt.date)
-
     racha = 0
     cur = hoy_chile()
-
     while cur in activas:
         racha += 1
         cur -= timedelta(days=1)
-
     return racha
 
-
 def fechas_descanso(df: pd.DataFrame) -> set:
-    if df.empty:
-        return set()
-
+    if df.empty: return set()
     t = df[df["Tipo_Ejercicio"] == TIPO_DESCANSO]
     return set(t["Fecha"].dt.date)
 
-
 def fechas_activas(df: pd.DataFrame) -> set:
-    if df.empty:
-        return set()
-
+    if df.empty: return set()
     temp = df[df["Tipo_Ejercicio"].isin(TIPOS_RACHA)].copy()
-
     temp = temp[
-        ((temp["Tipo_Ejercicio"].isin([TIPO_FLEXIONES, TIPO_PLANCHA])) & (temp["Cantidad"] > 0)) |
+        ((temp["Tipo_Ejercicio"].isin([TIPO_FLEXIONES, TIPO_PLANCHA, TIPO_SENTADILLAS, TIPO_ESTOCADAS])) & (temp["Cantidad"] > 0)) |
         (temp["Tipo_Ejercicio"] == TIPO_DESCANSO)
     ]
-
     return set(temp["Fecha"].dt.date)
 
-
 def peso_semanal(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return pd.DataFrame()
-
+    if df.empty: return pd.DataFrame()
     desde = hoy_chile() - timedelta(days=6)
-
-    t = df[
-        (df["Fecha"].dt.date >= desde) &
-        df["Peso"].notna() &
-        (df["Peso"] > 0)
-    ].copy()
-
-    if t.empty:
-        return pd.DataFrame()
-
+    t = df[(df["Fecha"].dt.date >= desde) & df["Peso"].notna() & (df["Peso"] > 0)].copy()
+    if t.empty: return pd.DataFrame()
     t["Dia"] = t["Fecha"].dt.strftime("%d/%m")
-
-    return (
-        t.sort_values("Fecha")
-        .groupby("Dia", as_index=False)["Peso"]
-        .last()
-        .set_index("Dia")
-    )
-
+    return t.sort_values("Fecha").groupby("Dia", as_index=False)["Peso"].last().set_index("Dia")
 
 def progreso_diario(df: pd.DataFrame, tipo: str, dias: int = 14) -> pd.DataFrame:
-    if df.empty:
-        return pd.DataFrame()
-
+    if df.empty: return pd.DataFrame()
     desde = hoy_chile() - timedelta(days=dias - 1)
-
-    t = df[
-        (df["Tipo_Ejercicio"] == tipo) &
-        (df["Fecha"].dt.date >= desde)
-    ].copy()
-
-    if t.empty:
-        return pd.DataFrame()
-
+    t = df[(df["Tipo_Ejercicio"] == tipo) & (df["Fecha"].dt.date >= desde)].copy()
+    if t.empty: return pd.DataFrame()
     t["Dia"] = t["Fecha"].dt.strftime("%d/%m")
-
     return t.groupby("Dia", as_index=False)["Cantidad"].sum().set_index("Dia")
-
 
 def actividad_horaria(df: pd.DataFrame) -> pd.DataFrame:
     hoy = datos_hoy(df)
-
-    if hoy.empty:
-        return pd.DataFrame(columns=["Hora", "Tipo_Ejercicio", "Cantidad"])
-
-    t = hoy[hoy["Tipo_Ejercicio"].isin([TIPO_FLEXIONES, TIPO_PLANCHA])].copy()
-
-    if t.empty:
-        return pd.DataFrame(columns=["Hora", "Tipo_Ejercicio", "Cantidad"])
-
+    if hoy.empty: return pd.DataFrame(columns=["Hora", "Tipo_Ejercicio", "Cantidad"])
+    
+    t = hoy[hoy["Tipo_Ejercicio"].isin([TIPO_FLEXIONES, TIPO_PLANCHA, TIPO_SENTADILLAS, TIPO_ESTOCADAS])].copy()
+    if t.empty: return pd.DataFrame(columns=["Hora", "Tipo_Ejercicio", "Cantidad"])
+    
     t["Hora"] = t["Fecha"].dt.hour
-
     resumen = t.groupby(["Hora", "Tipo_Ejercicio"], as_index=False)["Cantidad"].sum()
-
+    
     base = pd.DataFrame({"Hora": list(range(24))}).merge(
-        pd.DataFrame({"Tipo_Ejercicio": [TIPO_FLEXIONES, TIPO_PLANCHA]}),
+        pd.DataFrame({"Tipo_Ejercicio": [TIPO_FLEXIONES, TIPO_PLANCHA, TIPO_SENTADILLAS, TIPO_ESTOCADAS]}),
         how="cross"
     )
-
     resumen = base.merge(resumen, on=["Hora", "Tipo_Ejercicio"], how="left")
     resumen["Cantidad"] = resumen["Cantidad"].fillna(0).astype(int)
-
     return resumen
-
 
 def sync_deuda(input_key: str, state_key: str) -> None:
     st.session_state[state_key] = int(st.session_state.get(input_key, 0) or 0)
-
 
 def pct(valor: int, meta: int) -> float:
     return min(max(valor / meta, 0.0), 1.0) if meta > 0 else 0.0
 
 
 # ─────────────────────────────────────────────────────────────
-# HTML PURO
+# HTML PURO PARA LOS ANILLOS (Se mantienen Flexiones y Plancha)
 # ─────────────────────────────────────────────────────────────
 
 def arrow_polygon(cx: float, cy: float, r: float, progress: float, size: float) -> str:
     import math
-
-    if progress <= 0.02:
-        return ""
-
+    if progress <= 0.02: return ""
     progress = min(progress, 0.995)
-
     angle_deg = -90 + 360 * progress
     angle = math.radians(angle_deg)
-
     x = cx + r * math.cos(angle)
     y = cy + r * math.sin(angle)
-
     tangent = angle + math.pi / 2
-
     tx = math.cos(tangent)
     ty = math.sin(tangent)
-
     nx = math.cos(angle)
     ny = math.sin(angle)
-
-    tip_x = x + tx * size * 0.55
-    tip_y = y + ty * size * 0.55
-
-    base_x = x - tx * size * 0.55
-    base_y = y - ty * size * 0.55
-
-    p1_x = tip_x
-    p1_y = tip_y
-
-    p2_x = base_x + nx * size * 0.38
-    p2_y = base_y + ny * size * 0.38
-
-    p3_x = base_x - nx * size * 0.38
-    p3_y = base_y - ny * size * 0.38
-
-    return f"{p1_x:.2f},{p1_y:.2f} {p2_x:.2f},{p2_y:.2f} {p3_x:.2f},{p3_y:.2f}"
-
+    return f"{x + tx * size * 0.55:.2f},{y + ty * size * 0.55:.2f} {x - tx * size * 0.55 + nx * size * 0.38:.2f},{y - ty * size * 0.55 + ny * size * 0.38:.2f} {x - tx * size * 0.55 - nx * size * 0.38:.2f},{y - ty * size * 0.55 - ny * size * 0.38:.2f}"
 
 def rings_html(flexiones: int, plancha: int) -> str:
     import math
-
     pi = math.pi
-
     outer_r = 100
     inner_r = 62
-
     outer_c = 2 * pi * outer_r
     inner_c = 2 * pi * inner_r
-
     flex_progress = pct(flexiones, META_FLEXIONES)
     plan_progress = pct(plancha, META_PLANCHA)
-
     outer_dash = outer_c * flex_progress
     inner_dash = inner_c * plan_progress
-
     outer_arrow = arrow_polygon(130, 130, outer_r, flex_progress, 26)
     inner_arrow = arrow_polygon(130, 130, inner_r, plan_progress, 22)
-
-    outer_arrow_svg = ""
-    inner_arrow_svg = ""
-
-    if outer_arrow:
-        outer_arrow_svg = f'<polygon points="{outer_arrow}" fill="#FF2D55" />'
-
-    if inner_arrow:
-        inner_arrow_svg = f'<polygon points="{inner_arrow}" fill="#A1FF00" />'
+    outer_arrow_svg = f'<polygon points="{outer_arrow}" fill="#FF2D55" />' if outer_arrow else ""
+    inner_arrow_svg = f'<polygon points="{inner_arrow}" fill="#A1FF00" />' if inner_arrow else ""
 
     return f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <style>
-  * {{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }}
-
-  html, body {{
-    width: 100%;
-    height: 100%;
-    background: #1C1C1E;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }}
-
-  svg {{
-    display: block;
-    overflow: visible;
-    background: #1C1C1E;
-  }}
+  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+  html, body {{ width: 100%; height: 100%; background: #1C1C1E; display: flex; align-items: center; justify-content: center; overflow: hidden; }}
+  svg {{ display: block; overflow: visible; background: #1C1C1E; }}
 </style>
 </head>
 <body>
 <svg viewBox="0 0 260 260" width="260" height="260" xmlns="http://www.w3.org/2000/svg">
-
-  <circle
-    cx="130"
-    cy="130"
-    r="{outer_r}"
-    fill="none"
-    stroke="#5C1828"
-    stroke-width="32"
-  />
-
-  <circle
-    cx="130"
-    cy="130"
-    r="{outer_r}"
-    fill="none"
-    stroke="#FF2D55"
-    stroke-width="32"
-    stroke-linecap="round"
-    stroke-dasharray="{outer_dash:.2f} {outer_c:.2f}"
-    transform="rotate(-90 130 130)"
-  />
-
+  <circle cx="130" cy="130" r="{outer_r}" fill="none" stroke="#5C1828" stroke-width="32" />
+  <circle cx="130" cy="130" r="{outer_r}" fill="none" stroke="#FF2D55" stroke-width="32" stroke-linecap="round" stroke-dasharray="{outer_dash:.2f} {outer_c:.2f}" transform="rotate(-90 130 130)" />
   {outer_arrow_svg}
-
-  <circle
-    cx="130"
-    cy="130"
-    r="{inner_r}"
-    fill="none"
-    stroke="#3E650A"
-    stroke-width="32"
-  />
-
-  <circle
-    cx="130"
-    cy="130"
-    r="{inner_r}"
-    fill="none"
-    stroke="#A1FF00"
-    stroke-width="32"
-    stroke-linecap="round"
-    stroke-dasharray="{inner_dash:.2f} {inner_c:.2f}"
-    transform="rotate(-90 130 130)"
-  />
-
+  <circle cx="130" cy="130" r="{inner_r}" fill="none" stroke="#3E650A" stroke-width="32" />
+  <circle cx="130" cy="130" r="{inner_r}" fill="none" stroke="#A1FF00" stroke-width="32" stroke-linecap="round" stroke-dasharray="{inner_dash:.2f} {inner_c:.2f}" transform="rotate(-90 130 130)" />
   {inner_arrow_svg}
-
 </svg>
 </body>
 </html>"""
-
 
 def calendario_html(df: pd.DataFrame, dias: int = 35) -> str:
     activas = fechas_activas(df)
@@ -1150,50 +762,23 @@ def calendario_html(df: pd.DataFrame, dias: int = 35) -> str:
     inicio = hoy_chile() - timedelta(days=dias - 1)
     hoy = hoy_chile()
     sem = ["L", "M", "X", "J", "V", "S", "D"]
-
     cells = ""
 
     for i in range(dias):
         d = inicio + timedelta(days=i)
-
         clases = ["cal-cell"]
-
-        if d > hoy:
-            clases.append("cal-future")
-
-        if d in descansos:
-            clases.append("cal-rest")
-        elif d in activas:
-            clases.append("cal-done")
-
-        if d == hoy:
-            clases.append("cal-today")
+        if d > hoy: clases.append("cal-future")
+        if d in descansos: clases.append("cal-rest")
+        elif d in activas: clases.append("cal-done")
+        if d == hoy: clases.append("cal-today")
 
         is_filled = ("cal-done" in clases) or ("cal-rest" in clases)
-
         wd_color = "rgba(0,0,0,0.55)" if is_filled else "rgba(255,255,255,0.45)"
         day_color = "#000000" if is_filled else "#FFFFFF"
 
-        cells += f"""
-<div class="{' '.join(clases)}">
-  <div style="font-size:14px;font-weight:800;color:{day_color};line-height:1">{d.day}</div>
-  <div style="font-size:9px;font-weight:700;color:{wd_color};margin-top:3px">{sem[d.weekday()]}</div>
-</div>
-"""
+        cells += f'<div class="{" ".join(clases)}"><div style="font-size:14px;font-weight:800;color:{day_color};line-height:1">{d.day}</div><div style="font-size:9px;font-weight:700;color:{wd_color};margin-top:3px">{sem[d.weekday()]}</div></div>'
 
-    return f"""
-<div class="cal-wrap">
-  <div class="cal-grid">
-    {cells}
-  </div>
-  <div class="cal-legend">
-    <span><span class="dot dot-lime"></span>Actividad</span>
-    <span><span class="dot dot-orange"></span>Dia libre</span>
-    <span><span class="dot dot-gray"></span>Sin registro</span>
-  </div>
-</div>
-"""
-
+    return f'<div class="cal-wrap"><div class="cal-grid">{cells}</div><div class="cal-legend"><span><span class="dot dot-lime"></span>Actividad</span><span><span class="dot dot-orange"></span>Dia libre</span><span><span class="dot dot-gray"></span>Sin registro</span></div></div>'
 
 def descargar_csv(df: pd.DataFrame) -> bytes:
     return df.to_csv(index=False).encode("utf-8-sig")
@@ -1229,19 +814,9 @@ df = cargar_datos()
 
 with st.sidebar:
     st.markdown("**Peso diario**")
-
-    peso_sidebar = st.number_input(
-        "Peso (kg)",
-        min_value=0.0,
-        max_value=300.0,
-        value=0.0,
-        step=0.1,
-        format="%.1f",
-        key="peso_sidebar"
-    )
-
+    peso_sidebar = st.number_input("Peso (kg)", min_value=0.0, max_value=300.0, value=0.0, step=0.1, format="%.1f", key="peso_sidebar")
+    
     st.markdown('<div class="btn-subtle">', unsafe_allow_html=True)
-
     if st.button("Guardar peso", use_container_width=True, key="btn_guardar_peso_sidebar"):
         if peso_sidebar > 0:
             agregar_registro(TIPO_PESO, 0, peso=float(peso_sidebar))
@@ -1249,38 +824,26 @@ with st.sidebar:
             st.rerun()
         else:
             st.warning("Ingresa un peso valido.")
-
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("**Dia libre**")
     st.caption("Mantiene la racha activa.")
-
     st.markdown('<div class="btn-subtle">', unsafe_allow_html=True)
-
     if st.button("Marcar dia libre", use_container_width=True, key="btn_dia_libre_sidebar"):
         hd = datos_hoy(cargar_datos())
         ya = not hd.empty and (hd["Tipo_Ejercicio"] == TIPO_DESCANSO).any()
-
         if ya:
             st.warning("Ya marcaste dia libre hoy.")
         else:
             agregar_registro(TIPO_DESCANSO, 0)
             st.session_state.sick_ok = True
             st.rerun()
-
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("**Esfuerzo (RPE)**")
-
-    rpe_actual = st.slider(
-        "RPE",
-        1,
-        10,
-        7,
-        help="1 = facil · 10 = maximo"
-    )
+    rpe_actual = st.slider("RPE", 1, 10, 7, help="1 = facil · 10 = maximo")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1291,12 +854,16 @@ df = cargar_datos()
 
 flex_hoy = total_hoy(df, TIPO_FLEXIONES)
 plan_hoy = total_hoy(df, TIPO_PLANCHA)
+sent_hoy = total_hoy(df, TIPO_SENTADILLAS)
+est_hoy = total_hoy(df, TIPO_ESTOCADAS)
 
 peso_ult = peso_actual(df)
 racha = calcular_racha(df)
 
 pr_flex = max_diario(df, TIPO_FLEXIONES, excluir_hoy=False)
 pr_plan = max_diario(df, TIPO_PLANCHA, excluir_hoy=False)
+pr_sent = max_diario(df, TIPO_SENTADILLAS, excluir_hoy=False)
+pr_est = max_diario(df, TIPO_ESTOCADAS, excluir_hoy=False)
 
 peso_txt = "Sin dato" if peso_ult is None else f"{peso_ult:.1f} kg"
 
@@ -1319,6 +886,8 @@ st.markdown('<div class="btn-top-bath">', unsafe_allow_html=True)
 if st.button("FUI AL BAÑO", use_container_width=True, key="btn_top_bath"):
     registrar_con_pr(TIPO_FLEXIONES, 5, peso=peso_ult, rpe=rpe_actual)
     registrar_con_pr(TIPO_PLANCHA, 20, peso=peso_ult, rpe=rpe_actual)
+    registrar_con_pr(TIPO_SENTADILLAS, 5, peso=peso_ult, rpe=rpe_actual)
+    registrar_con_pr(TIPO_ESTOCADAS, 5, peso=peso_ult, rpe=rpe_actual)
     st.session_state.express_ok = True
     st.rerun()
 
@@ -1339,7 +908,7 @@ for msg in st.session_state.pr_msg:
 st.session_state.pr_msg = []
 
 if st.session_state.express_ok:
-    st.success("+5 flexiones y +20 s registrados.")
+    st.success("Rutina express completada: +5 Flex, +20s Plancha, +5 Sentadillas, +5 Estocadas.")
     st.session_state.express_ok = False
 
 if st.session_state.deuda_ok:
@@ -1356,11 +925,10 @@ if st.session_state.sick_ok:
 
 
 # ─────────────────────────────────────────────────────────────
-# DASHBOARD DE ANILLOS
+# DASHBOARD DE ANILLOS Y ESTADÍSTICAS
 # ─────────────────────────────────────────────────────────────
 
 st.markdown('<div class="rings-master-card">', unsafe_allow_html=True)
-
 col_ring, col_data = st.columns([1.05, 0.95])
 
 with col_ring:
@@ -1373,52 +941,24 @@ with col_data:
 <div class="ring-data-stack">
   <div class="ring-stat">
     <div class="ring-stat-label">Flexiones</div>
-    <div class="ring-stat-value c-pink">{flex_hoy} / {META_FLEXIONES}</div>
-    <div class="ring-stat-sub">Progreso visual del dia</div>
+    <div class="ring-stat-value c-pink">{flex_hoy}</div>
   </div>
-
   <div class="ring-stat">
     <div class="ring-stat-label">Plancha</div>
-    <div class="ring-stat-value c-lime">{plan_hoy} / {META_PLANCHA}s</div>
-    <div class="ring-stat-sub">Progreso visual del dia</div>
+    <div class="ring-stat-value c-lime">{plan_hoy}s</div>
+  </div>
+  <div class="ring-stat">
+    <div class="ring-stat-label">Sentadillas</div>
+    <div class="ring-stat-value c-cyan">{sent_hoy}</div>
+  </div>
+  <div class="ring-stat">
+    <div class="ring-stat-label">Estocadas (X Pierna)</div>
+    <div class="ring-stat-value c-orange">{est_hoy}</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ─────────────────────────────────────────────────────────────
-# IMPACT GRID
-# ─────────────────────────────────────────────────────────────
-
-st.markdown(f"""
-<div class="impact-grid">
-  <div class="impact-card">
-    <div class="impact-label">Flexiones hoy</div>
-    <div class="impact-val c-pink">{flex_hoy}</div>
-    <div class="impact-detail">meta visual {META_FLEXIONES}</div>
-  </div>
-
-  <div class="impact-card">
-    <div class="impact-label">Plancha hoy</div>
-    <div class="impact-val c-lime">{fmt(plan_hoy)}</div>
-    <div class="impact-detail">meta visual {fmt(META_PLANCHA)}</div>
-  </div>
-
-  <div class="impact-card">
-    <div class="impact-label">Racha</div>
-    <div class="impact-val c-lilac">{racha}</div>
-    <div class="impact-detail">dias consecutivos</div>
-  </div>
-
-  <div class="impact-card">
-    <div class="impact-label">Peso</div>
-    <div class="impact-val c-blue">{peso_txt}</div>
-    <div class="impact-detail">ultimo registro</div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1433,92 +973,120 @@ tab_e, tab_d, tab_p, tab_a = st.tabs(["Entreno", "Oficina / Calle", "Peso", "Ana
 # ══════════════════════════════════════════════════════════════
 
 with tab_e:
+    # ── FLEXIONES ──
     st.markdown("""
 <div class="exercise-card">
   <div class="card-label">Ejercicio</div>
   <div class="exercise-title c-pink">FLEXIONES</div>
-  <div class="exercise-subtitle">Un toque registra 5 repeticiones. El campo inferior permite ingresar una cifra exacta.</div>
+  <div class="exercise-subtitle">Un toque registra 5 repeticiones.</div>
 </div>
 """, unsafe_allow_html=True)
 
     st.markdown('<div class="btn-pink">', unsafe_allow_html=True)
-
     if st.button("+ 5 Flexiones", use_container_width=True, key="btn_f5"):
         registrar_con_pr(TIPO_FLEXIONES, 5, peso=peso_ult, rpe=rpe_actual)
         st.session_state.guardado_ok = True
         st.rerun()
-
     st.markdown("</div>", unsafe_allow_html=True)
 
     mfk = f"mf_{st.session_state.manual_ver}"
-
     st.markdown('<div class="manual-row">', unsafe_allow_html=True)
-
-    mf = st.number_input(
-        "Cantidad exacta de flexiones",
-        min_value=0,
-        max_value=3000,
-        value=0,
-        step=1,
-        key=mfk
-    )
-
+    mf = st.number_input("Cantidad exacta de flexiones", min_value=0, max_value=3000, value=0, step=1, key=mfk)
     st.markdown("</div>", unsafe_allow_html=True)
-
     if mf > 0:
         st.markdown('<div class="btn-pink">', unsafe_allow_html=True)
-
         if st.button("Guardar flexiones", use_container_width=True, key="btn_mf"):
             registrar_con_pr(TIPO_FLEXIONES, int(mf), peso=peso_ult, rpe=rpe_actual)
             st.session_state.manual_ver += 1
             st.session_state.guardado_ok = True
             st.rerun()
-
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
+    # ── PLANCHA ──
     st.markdown("""
 <div class="exercise-card">
   <div class="card-label">Ejercicio</div>
   <div class="exercise-title c-lime">PLANCHA</div>
-  <div class="exercise-subtitle">Un toque registra 10 segundos. El campo inferior permite ingresar segundos exactos.</div>
+  <div class="exercise-subtitle">Un toque registra 10 segundos.</div>
 </div>
 """, unsafe_allow_html=True)
 
     st.markdown('<div class="btn-lime">', unsafe_allow_html=True)
-
     if st.button("+ 10 segundos", use_container_width=True, key="btn_p10"):
         registrar_con_pr(TIPO_PLANCHA, 10, peso=peso_ult, rpe=rpe_actual)
         st.session_state.guardado_ok = True
         st.rerun()
-
     st.markdown("</div>", unsafe_allow_html=True)
 
     mpk = f"mp_{st.session_state.manual_ver}"
-
     st.markdown('<div class="manual-row">', unsafe_allow_html=True)
-
-    mp = st.number_input(
-        "Segundos exactos de plancha",
-        min_value=0,
-        max_value=30000,
-        value=0,
-        step=5,
-        key=mpk
-    )
-
+    mp = st.number_input("Segundos exactos de plancha", min_value=0, max_value=30000, value=0, step=5, key=mpk)
     st.markdown("</div>", unsafe_allow_html=True)
-
     if mp > 0:
         st.markdown('<div class="btn-lime">', unsafe_allow_html=True)
-
         if st.button("Guardar plancha", use_container_width=True, key="btn_mp"):
             registrar_con_pr(TIPO_PLANCHA, int(mp), peso=peso_ult, rpe=rpe_actual)
             st.session_state.manual_ver += 1
             st.session_state.guardado_ok = True
             st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
+    # ── SENTADILLAS ──
+    st.markdown("""
+<div class="exercise-card">
+  <div class="card-label">Ejercicio</div>
+  <div class="exercise-title c-cyan">SENTADILLAS</div>
+  <div class="exercise-subtitle">Un toque registra 5 repeticiones.</div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown('<div class="btn-cyan">', unsafe_allow_html=True)
+    if st.button("+ 5 Sentadillas", use_container_width=True, key="btn_s5"):
+        registrar_con_pr(TIPO_SENTADILLAS, 5, peso=peso_ult, rpe=rpe_actual)
+        st.session_state.guardado_ok = True
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    msk = f"ms_{st.session_state.manual_ver}"
+    st.markdown('<div class="manual-row">', unsafe_allow_html=True)
+    ms = st.number_input("Cantidad exacta de sentadillas", min_value=0, max_value=3000, value=0, step=1, key=msk)
+    st.markdown("</div>", unsafe_allow_html=True)
+    if ms > 0:
+        st.markdown('<div class="btn-cyan">', unsafe_allow_html=True)
+        if st.button("Guardar sentadillas", use_container_width=True, key="btn_ms"):
+            registrar_con_pr(TIPO_SENTADILLAS, int(ms), peso=peso_ult, rpe=rpe_actual)
+            st.session_state.manual_ver += 1
+            st.session_state.guardado_ok = True
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── ESTOCADAS ──
+    st.markdown("""
+<div class="exercise-card">
+  <div class="card-label">Ejercicio</div>
+  <div class="exercise-title c-orange">ESTOCADAS</div>
+  <div class="exercise-subtitle">Un toque registra 5 repeticiones (por pierna).</div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown('<div class="btn-orange-big">', unsafe_allow_html=True)
+    if st.button("+ 5 Estocadas (x pierna)", use_container_width=True, key="btn_e5"):
+        registrar_con_pr(TIPO_ESTOCADAS, 5, peso=peso_ult, rpe=rpe_actual)
+        st.session_state.guardado_ok = True
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    mek = f"me_{st.session_state.manual_ver}"
+    st.markdown('<div class="manual-row">', unsafe_allow_html=True)
+    me = st.number_input("Cantidad exacta de estocadas (x pierna)", min_value=0, max_value=3000, value=0, step=1, key=mek)
+    st.markdown("</div>", unsafe_allow_html=True)
+    if me > 0:
+        st.markdown('<div class="btn-orange-big">', unsafe_allow_html=True)
+        if st.button("Guardar estocadas", use_container_width=True, key="btn_me"):
+            registrar_con_pr(TIPO_ESTOCADAS, int(me), peso=peso_ult, rpe=rpe_actual)
+            st.session_state.manual_ver += 1
+            st.session_state.guardado_ok = True
+            st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -1532,7 +1100,6 @@ with tab_d:
   <div class="card-label">Modo Oficina / Calle</div>
   <div class="card-title">Deuda pendiente</div>
   <div class="card-sub">Acumula lo que debes y saldalo de un toque.</div>
-
   <div class="debt-display">
     <div class="debt-number">{st.session_state.deuda_flex} flex &nbsp;/&nbsp; {fmt(st.session_state.deuda_plan)}</div>
     <div class="debt-sub">Pendiente ahora</div>
@@ -1544,39 +1111,15 @@ with tab_d:
     dfk = f"df_{dv}"
     dpk = f"dp_{dv}"
 
-    st.number_input(
-        "Flexiones pendientes",
-        min_value=0,
-        max_value=3000,
-        value=st.session_state.deuda_flex,
-        step=5,
-        key=dfk,
-        on_change=sync_deuda,
-        args=(dfk, "deuda_flex")
-    )
-
-    st.number_input(
-        "Segundos de plancha pendientes",
-        min_value=0,
-        max_value=30000,
-        value=st.session_state.deuda_plan,
-        step=10,
-        key=dpk,
-        on_change=sync_deuda,
-        args=(dpk, "deuda_plan")
-    )
+    st.number_input("Flexiones pendientes", min_value=0, max_value=3000, value=st.session_state.deuda_flex, step=5, key=dfk, on_change=sync_deuda, args=(dfk, "deuda_flex"))
+    st.number_input("Segundos de plancha pendientes", min_value=0, max_value=30000, value=st.session_state.deuda_plan, step=10, key=dpk, on_change=sync_deuda, args=(dpk, "deuda_plan"))
 
     st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
-
     if st.button("Saldar deuda", use_container_width=True, key="btn_saldar"):
         fd = int(st.session_state.deuda_flex)
         pd_ = int(st.session_state.deuda_plan)
-
-        if fd > 0:
-            registrar_con_pr(TIPO_FLEXIONES, fd, peso=peso_ult, rpe=rpe_actual)
-
-        if pd_ > 0:
-            registrar_con_pr(TIPO_PLANCHA, pd_, peso=peso_ult, rpe=rpe_actual)
+        if fd > 0: registrar_con_pr(TIPO_FLEXIONES, fd, peso=peso_ult, rpe=rpe_actual)
+        if pd_ > 0: registrar_con_pr(TIPO_PLANCHA, pd_, peso=peso_ult, rpe=rpe_actual)
 
         if fd > 0 or pd_ > 0:
             st.session_state.deuda_flex = 0
@@ -1586,7 +1129,6 @@ with tab_d:
             st.rerun()
         else:
             st.warning("No hay deuda pendiente.")
-
     st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -1603,18 +1145,9 @@ with tab_p:
 </div>
 """, unsafe_allow_html=True)
 
-    peso_tab = st.number_input(
-        "Peso actual (kg)",
-        min_value=0.0,
-        max_value=300.0,
-        value=0.0,
-        step=0.1,
-        format="%.1f",
-        key="peso_tab"
-    )
+    peso_tab = st.number_input("Peso actual (kg)", min_value=0.0, max_value=300.0, value=0.0, step=0.1, format="%.1f", key="peso_tab")
 
     st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-
     if st.button("Guardar peso", use_container_width=True, key="btn_guardar_peso_tab"):
         if peso_tab > 0:
             agregar_registro(TIPO_PESO, 0, peso=float(peso_tab))
@@ -1622,7 +1155,6 @@ with tab_p:
             st.rerun()
         else:
             st.warning("Ingresa un peso valido.")
-
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("""
@@ -1634,7 +1166,6 @@ with tab_p:
 """, unsafe_allow_html=True)
 
     pdf = peso_semanal(df)
-
     if not pdf.empty:
         st.line_chart(pdf, use_container_width=True, height=260, color="#0A84FF")
     else:
@@ -1655,36 +1186,22 @@ with tab_a:
 """, unsafe_allow_html=True)
 
     hdf = actividad_horaria(df)
-
     if not hdf.empty and hdf["Cantidad"].sum() > 0:
         hdf["activo"] = hdf["Cantidad"].apply(lambda x: "activo" if x > 0 else "inactivo")
-
         chart = (
             alt.Chart(hdf)
             .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
             .encode(
                 x=alt.X("Hora:O", title="Hora"),
                 y=alt.Y("Cantidad:Q", title=""),
-                color=alt.Color(
-                    "activo:N",
-                    scale=alt.Scale(
-                        domain=["activo", "inactivo"],
-                        range=["#00FFFF", "#3A3A3C"]
-                    ),
-                    legend=None
-                ),
+                color=alt.Color("activo:N", scale=alt.Scale(domain=["activo", "inactivo"], range=["#00FFFF", "#3A3A3C"]), legend=None),
                 tooltip=["Hora", "Tipo_Ejercicio", "Cantidad"],
             )
             .properties(height=240)
             .configure_view(strokeWidth=0)
-            .configure_axis(
-                labelColor="#8E8E93",
-                titleColor="#8E8E93",
-                gridColor="rgba(255,255,255,0.06)"
-            )
+            .configure_axis(labelColor="#8E8E93", titleColor="#8E8E93", gridColor="rgba(255,255,255,0.06)")
             .configure(background="#000000")
         )
-
         st.altair_chart(chart, use_container_width=True)
     else:
         st.info("Sin actividad registrada hoy.")
@@ -1704,25 +1221,18 @@ with tab_a:
   <div class="impact-card">
     <div class="impact-label">Record Flexiones</div>
     <div class="impact-val c-pink">{pr_flex}</div>
-    <div class="impact-detail">reps en un dia</div>
   </div>
-
   <div class="impact-card">
     <div class="impact-label">Record Plancha</div>
     <div class="impact-val c-lime">{fmt(pr_plan)}</div>
-    <div class="impact-detail">tiempo en un dia</div>
   </div>
-
   <div class="impact-card">
-    <div class="impact-label">Racha</div>
-    <div class="impact-val c-lilac">{racha}</div>
-    <div class="impact-detail">dias activos</div>
+    <div class="impact-label">Record Sentadillas</div>
+    <div class="impact-val c-cyan">{pr_sent}</div>
   </div>
-
   <div class="impact-card">
-    <div class="impact-label">Registros</div>
-    <div class="impact-val c-blue">{len(df)}</div>
-    <div class="impact-detail">filas en CSV</div>
+    <div class="impact-label">Record Estocadas</div>
+    <div class="impact-val c-orange">{pr_est}</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -1736,24 +1246,24 @@ with tab_a:
 
     fc = progreso_diario(df, TIPO_FLEXIONES, 14)
     pc = progreso_diario(df, TIPO_PLANCHA, 14)
+    sc = progreso_diario(df, TIPO_SENTADILLAS, 14)
+    ec = progreso_diario(df, TIPO_ESTOCADAS, 14)
 
     if not fc.empty:
-        st.markdown(
-            '<p style="color:#FF2D55;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Flexiones</p>',
-            unsafe_allow_html=True
-        )
+        st.markdown('<p style="color:#FF2D55;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Flexiones</p>', unsafe_allow_html=True)
         st.bar_chart(fc, use_container_width=True, height=180, color="#FF2D55")
-    else:
-        st.info("Sin datos de flexiones.")
-
+    
     if not pc.empty:
-        st.markdown(
-            '<p style="color:#A1FF00;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin:8px 0 4px">Plancha</p>',
-            unsafe_allow_html=True
-        )
+        st.markdown('<p style="color:#A1FF00;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin:8px 0 4px">Plancha</p>', unsafe_allow_html=True)
         st.bar_chart(pc, use_container_width=True, height=180, color="#A1FF00")
-    else:
-        st.info("Sin datos de plancha.")
+        
+    if not sc.empty:
+        st.markdown('<p style="color:#00FFFF;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin:8px 0 4px">Sentadillas</p>', unsafe_allow_html=True)
+        st.bar_chart(sc, use_container_width=True, height=180, color="#00FFFF")
+
+    if not ec.empty:
+        st.markdown('<p style="color:#FF9500;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin:8px 0 4px">Estocadas</p>', unsafe_allow_html=True)
+        st.bar_chart(ec, use_container_width=True, height=180, color="#FF9500")
 
     st.markdown("""
 <div class="fit-card" style="margin-top:16px">
@@ -1762,37 +1272,8 @@ with tab_a:
 </div>
 """, unsafe_allow_html=True)
 
-    st.dataframe(
-        df.sort_values("Fecha", ascending=False),
-        use_container_width=True,
-        hide_index=True
-    )
+    st.dataframe(df.sort_values("Fecha", ascending=False), use_container_width=True, hide_index=True)
 
     st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-
-    st.download_button(
-        label="Descargar CSV",
-        data=descargar_csv(df),
-        file_name="data_lagartijas.csv",
-        mime="text/csv",
-        use_container_width=True,
-    )
-
+    st.download_button(label="Descargar CSV", data=descargar_csv(df), file_name="data_lagartijas.csv", mime="text/csv", use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
-
-if st.button("PROBAR GOOGLE SHEETS"):
-    try:
-        sheet = conectar_sheet()
-
-        sheet.append_row([
-            str(ahora_chile()),
-            "TEST",
-            999,
-            "",
-            "",
-        ])
-
-        st.success("FILA ESCRITA EN GOOGLE SHEETS")
-
-    except Exception as e:
-        st.exception(e)
